@@ -3,11 +3,11 @@ require('dotenv').config()
 const Discord = require('discord.js')
 const franc = require('franc')
 const translate = require('google-translate-api')
+const fs = require('fs')
 
 const client = new Discord.Client()
 const REPLY = 0
 const SEND = 1
-const REACT = 2
 
 const MESSAGE = 0
 const TIME = 1
@@ -22,39 +22,10 @@ var lastChannel
 var simpleMsgReply = []
 var simpleMsg = []
 var reactions = []
-var randomQuestions = []
-const msg = [
-  {
-    trigger: () => {
-      let date = new Date()
-      return (
-        date.getHours() >= 12 &&
-        date.getHours() < 21 
-      ) && (
-        Math.floor(Math.random() * 100) + 1 === 3
-      )
-    },
-    response: () => {
-      let user = Array.from(client.users.values()).filter(user => user.id !== '1' && user.id !== process.env.CLIENT_ID).filter(user => {
-        return sentIds.indexOf(user.id) === -1
-      })
-      user = user[Math.floor(Math.random() * user.length)]
 
-      sentIds.push(user.id)
-      console.log('random question success')
-      return new Promise(resolve => {
-        if (user.id == '132867430937526272') { // eslint-disable-line eqeqeq
-          resolve(`<@${user.id}> leve du`) // henning hehe
-        } else {
-          resolve(`<@${user.id}> ${randomQuestions[Math.floor(Math.random() * randomQuestions.length)]}`)
-        }
-      })
-    },
-    triggerType: TIME,
-    responseType: SEND,
-    lastSentAt: 0,
-    timeout: 30000
-  },
+var messageHistory = []
+
+const msg = [
   {
     trigger: message => {
       var francMessage = franc(message)
@@ -79,7 +50,7 @@ const msg = [
     triggerType: MESSAGE,
     responseType: REPLY,
     lastSentAt: 0,
-    timeout: 3000
+    timeout: 10000
   },
   {
     trigger: message => {
@@ -132,7 +103,7 @@ const msg = [
         message.toLowerCase().indexOf(' rs3 ') > -1 ||
         message.toLowerCase().indexOf(' rs3') > -1 ||
         message.toLowerCase().indexOf(' bgrs') > -1 ||
-        message.toLowerCase().indexOf(' bgrs ') > -1 
+        message.toLowerCase().indexOf(' bgrs ') > -1
       )
     },
     response: message => {
@@ -161,7 +132,7 @@ const msg = [
     responseType: SEND,
     triggerType: MESSAGE,
     lastSentAt: 0,
-    timeout: 3000
+    timeout: 10000
   },
   {
     trigger: message => {
@@ -178,7 +149,7 @@ const msg = [
     responseType: SEND,
     triggerType: MESSAGE,
     lastSentAt: 0,
-    timeout: 3000
+    timeout: 10000
   },
   {
     trigger: message => {
@@ -251,7 +222,7 @@ const msg = [
     triggerType: MESSAGE,
     responseType: SEND,
     lastSentAt: 0,
-    timeout: 3000
+    timeout: 10000
   },
   {
     trigger: message => {
@@ -260,7 +231,7 @@ const msg = [
     },
     response: () => {
       return new Promise(resolve => {
-        resolve('leet ${emojis.wink}')
+        resolve('leet :wink:')
       })
     },
     triggerType: MESSAGE,
@@ -282,16 +253,16 @@ const msg = [
     triggerType: MESSAGE,
     responseType: REPLY,
     lastSentAt: 0,
-    timeout: 3000
+    timeout: 10000
   },
   {
     trigger: message => {
       let date = new Date()
-      return  date.getDay() === 27 && date.getMonth() === 7 && date.getFullYear === 2027
+      return date.getDay() === 27 && date.getMonth() === 7 && date.getFullYear === 2027
     },
     response: () => {
       return new Promise(resolve => {
-        resolve('Sjuesjuende i sjuende sjuesjuesju ${emojis.nono}')
+        resolve(`Sjuesjuende i sjuende sjuesjuesju ${emojis.yeye}`)
       })
     },
     triggerType: MESSAGE,
@@ -312,7 +283,7 @@ const msg = [
     triggerType: MESSAGE,
     responseType: REPLY,
     lastSentAt: 0,
-    timeout: 3000
+    timeout: 10000
   },
   {
     trigger: message => {
@@ -334,7 +305,7 @@ const msg = [
     triggerType: MESSAGE,
     responseType: REPLY,
     lastSentAt: 0,
-    timeout: 3000
+    timeout: 10000
   },
   {
     trigger: message => {
@@ -354,7 +325,7 @@ const msg = [
     triggerType: MESSAGE,
     responseType: SEND,
     lastSentAt: 0,
-    timeout: 3000
+    timeout: 10000
   },
   {
     trigger: message => {
@@ -368,7 +339,7 @@ const msg = [
     triggerType: MESSAGE,
     responseType: REPLY,
     lastSentAt: 0,
-    timeout: 3000
+    timeout: 10000
   }
 ]
 
@@ -455,7 +426,7 @@ client.on('ready', () => {
     },
     {
       trigger: 'nok en gang',
-      response: 'nok en gang ser vi behovet for en legalisering av marihuana i norge i dag|nok en gang ser vi behovet for et forbud mot anime i norge i dag'
+      response: 'nok en gang ser vi behovet for en legalisering av marihuana i norge i dag|nok en gang ser vi behovet for et forbud mot anime i norge i dag|nok en gang ser vi behovet for en legalisering av marihuana i norge|nok en gang ser vi behovet for et forbud mot anime i norge'
     },
     {
       trigger: 'endelig',
@@ -617,22 +588,14 @@ client.on('ready', () => {
       }
     }
   ]
-  randomQuestions = [
-    'ronke du',
-    'leve du',
-    'hey',
-    'jp',
-    'kor d går',
-    'hehe',
-    'har du kuk eller fitte'
-  ]
 })
 
 client.on('message', message => {
   console.log(`${message.author.username}: ${message.content}`)
+  if (message.author.bot) return
+  if ((Math.floor(Math.random() * 5) + 1) > 1) return
   now = (new Date()).getTime()
   lastChannel = message.channel
-  if (message.author.bot) return
 
   /**
    * Do reactions
@@ -647,31 +610,28 @@ client.on('message', message => {
   /**
    * Respond to messages
    */
-  msg.filter(msg => {
+  msg.filter(thisMessage => {
     return (
-      msg.triggerType === MESSAGE &&
-      msg.lastSentAt + msg.timeout <= now
+      thisMessage.triggerType === MESSAGE &&
+      thisMessage.lastSentAt + thisMessage.timeout <= now
     )
-  }).some((msg, i) => {
-    if (msg.trigger(message.content)) {
-      msg.response(message)
+  }).some((thisMessage, i) => {
+    if (thisMessage.trigger(message.content)) {
+      thisMessage.response(message)
       .then(reply => {
         if (disabled === 0 || disabled === 1) {
           if (disabled === 1) disabled = 2
-          if (msg.responseType === REPLY) {
+          if (thisMessage.responseType === REPLY) {
             reply = `${message.author} ${reply}`
-          } else if (msg.responseType === REACT) {
-            return new Promise(resolve => {
-              resolve({}) // empty promises
-            })
           }
+          msg[i].lastSentAt = now
           return message.channel.send(reply)
         }
-        msg.lastSentAt = now
       })
       .catch(error => {
         console.log(error)
       })
+      console.log(msg[i])
       return true
     }
   })
@@ -697,11 +657,71 @@ client.setInterval(() => {
 
 client.login(process.env.TOKEN)
 
+function fillMessageHistory (channel, stopAt, before) {
+  console.log('fetching message history... stopat: ' + stopAt + ' before: ' + before)
+  return (function () {
+    if (before) return lastChannel.fetchMessages({ limit: 100, before: before })
+    return lastChannel.fetchMessages({ limit: 100 })
+  })()
+  .then(messages => {
+    messages.forEach(message => {
+      messageHistory.push({
+        id: message.id,
+        content: message.content,
+        timestamp: message.createdTimestamp
+      })
+    })
+    return new Promise(resolve => {
+      resolve(messageHistory[messageHistory.length - 1])
+    })
+  })
+  .then(lastMessage => {
+    if (
+      lastMessage.timestamp < stopAt ||
+      lastMessage.id === before
+    ) {
+      return new Promise(resolve => {
+        resolve(true)
+      })
+    } else {
+      return fillMessageHistory(channel, stopAt, lastMessage.id)
+    }
+  })
+}
+
+function filterMentions () {
+  messageHistory = messageHistory.filter(message => {
+    return message.content.indexOf(`<@${process.env.CLIENT_ID}>`) > -1
+  })
+}
+
 process.stdin.on('readable', () => {
   const chunk = process.stdin.read()
   if (chunk !== null) {
     if (lastChannel) {
-      lastChannel.send(chunk.toString())
+      if (chunk.toString().indexOf('history') > -1) {
+        fillMessageHistory(lastChannel, 1507680000000)
+        .then(result => {
+          if (result) {
+            filterMentions()
+            fs.writeFile('messageHistory.txt', messageHistory.reduce((fileString, history) => {
+              fileString += history.content + '\n'
+              return fileString
+            }, '\n'), () => {
+              console.log('finished writing messageHistory.txt')
+            })
+            console.log(messageHistory.length)
+          }
+        })
+        .catch(error => console.error(error))
+      } else {
+        try {
+          eval(chunk.toString())
+        } catch (e) {
+          console.log(e)
+          lastChannel.send(chunk.toString())
+        }
+      }
     }
   }
 })
