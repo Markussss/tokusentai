@@ -1,9 +1,11 @@
 require('dotenv').config()
 
+const mongo = require('mongodb').MongoClient
 const Discord = require('discord.js')
 const franc = require('franc')
 const translate = require('google-translate-api')
-const fs = require('fs')
+// const Markov = require('simple-markov')
+const MarkovGen = require('markov-generator')
 
 const client = new Discord.Client()
 const REPLY = 0
@@ -13,17 +15,33 @@ const MESSAGE = 0
 const TIME = 1
 const INTERVAL = 20000
 
+const mongoURL = 'mongodb://localhost:27017/tokusentai'
+
 var disabled = 0 // 0 => not disabled, 1 => will disable after this message, 2 => disabled
 var now = (new Date()).getTime()
 
 var emojis = {}
 var lastChannel
+var messages // mongoDb collection
 
 var simpleMsgReply = []
 var simpleMsg = []
 var reactions = []
+var markovMessages = []
+var markovs = []
+// var messageHistory = []
 
-var messageHistory = []
+function chunkArray (arr, chunkCount) {
+  var chunks = []
+  while (arr.length) {
+    const chunkSize = Math.ceil(arr.length / chunkCount)
+    const chunk = arr.slice(0, chunkSize)
+    chunks.push(chunk)
+    chunkCount -= 1
+    arr = arr.slice(chunkSize)
+  }
+  return chunks
+}
 
 const msg = [
   {
@@ -45,6 +63,9 @@ const msg = [
             `${emojis.RRRREEEE} ${emojis.RRRREEEE} ${emojis.RRRREEEE} ${emojis.RRRREEEE} ${emojis.RRRREEEE} ${emojis.RRRREEEE}`
           )
         })
+      })
+      .catch(error => {
+        console.log(error)
       })
     },
     triggerType: MESSAGE,
@@ -213,10 +234,14 @@ const msg = [
       })
       .then(() => {
         return message.react(emojis.zero)
-      }).then(() => {
+      })
+      .then(() => {
         return new Promise(resolve => {
           resolve({})
         })
+      })
+      .catch(error => {
+        console.log(error)
       })
     },
     triggerType: MESSAGE,
@@ -342,6 +367,63 @@ const msg = [
     timeout: 10000
   }
 ]
+
+mongo.connect(mongoURL, (err, db) => {
+  if (err) throw err
+  messages = db.collection('messages')
+  // markov = new Markov(10, 'hey')
+  messages.find(
+    {
+      author: {$nin: [`${process.env.CLIENT_ID}`]}
+    }, {
+      _id: 0,
+      message: 1
+    }
+  ).toArray((err, res) => {
+    let endSign = ['.', '.', '.', '!', '!!', '...', '!!!!!!!!', '!!!!!!!!111']
+    if (err) throw err
+    if (res && res.length > 0) {
+      res.forEach(message => {
+        let usefullMessage = message.message.replace(/<.*>/g, '')
+        usefullMessage = usefullMessage.replace(/:.*:/g, '')
+        usefullMessage = usefullMessage.replace(/[^a-zA-ZæøåÆØÅ.:/\-,!\s]+/g, '')
+        usefullMessage = usefullMessage.trim().split(' ').filter(t => t.length > 3).join(' ')
+        if (usefullMessage.length > 1) {
+          markovMessages.push(usefullMessage + endSign[Math.floor(Math.random() * endSign.length - 1)])
+        }
+      })
+
+      let targetMarkovs = Math.ceil(markovMessages.length / 2567)
+      let time
+      let length
+      let messagesLength = markovMessages.length
+      markovMessages = chunkArray(markovMessages, targetMarkovs)
+
+      console.log(`learning ${messagesLength} messages. this might take a while...`)
+      console.log(`splitting messages into ${targetMarkovs} different chains`)
+
+      for (let i = 0; i < targetMarkovs; i++) {
+        // let markov = new Markov(length, markovMessages[i][0])
+        time = Date.now()
+        length = Math.floor(5 + (i / 2)) // Math.floor(Math.random() * 10) + 2
+
+        // markovMessages[i].forEach((message, i) => {
+        //   if (i === 0) return
+        //   markov.learn(message)
+        // })
+        markovs.push(
+          // markov
+          new MarkovGen({
+            input: markovMessages[i],
+            minLength: length
+          })
+        )
+        console.log(`learned ${markovMessages[i].length} messages in ${Date.now() - time}ms. this chain has a minlength of ${length}`)
+      }
+      console.log(`created ${markovMessages.length} makrov chains! ready for use!`)
+    }
+  })
+})
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`)
@@ -471,6 +553,9 @@ client.on('ready', () => {
         .then(() => {
           return message.react(emojis.hundred)
         })
+        .catch(error => {
+          console.log(error)
+        })
       }
     },
     {
@@ -482,6 +567,9 @@ client.on('ready', () => {
         })
         .then(() => {
           return message.react(emojis.hundred)
+        })
+        .catch(error => {
+          console.log(error)
         })
       }
     },
@@ -495,6 +583,9 @@ client.on('ready', () => {
         .then(() => {
           return message.react(emojis.hundred)
         })
+        .catch(error => {
+          console.log(error)
+        })
       }
     },
     {
@@ -507,6 +598,9 @@ client.on('ready', () => {
       trigger: emojis.weed.toString(),
       reaction: message => {
         message.react(emojis.yeye)
+        .catch(error => {
+          console.log(error)
+        })
       }
     },
     {
@@ -521,6 +615,9 @@ client.on('ready', () => {
         })
         .then(() => {
           return message.react(emojis.zero)
+        })
+        .catch(error => {
+          console.log(error)
         })
       }
     },
@@ -540,6 +637,9 @@ client.on('ready', () => {
         .then(() => {
           return message.react(emojis.jiss)
         })
+        .catch(error => {
+          console.log(error)
+        })
       }
     },
     {
@@ -554,6 +654,9 @@ client.on('ready', () => {
         })
         .then(() => {
           return message.react(emojis.zero)
+        })
+        .catch(error => {
+          console.log(error)
         })
       }
     },
@@ -570,6 +673,9 @@ client.on('ready', () => {
         .then(() => {
           return message.react(emojis.zero)
         })
+        .catch(error => {
+          console.log(error)
+        })
       }
     },
     {
@@ -585,6 +691,9 @@ client.on('ready', () => {
         .then(() => {
           return message.react(emojis.zero)
         })
+        .catch(error => {
+          console.log(error)
+        })
       }
     }
   ]
@@ -593,9 +702,13 @@ client.on('ready', () => {
 client.on('message', message => {
   console.log(`${message.author.username}: ${message.content}`)
   if (message.author.bot) return
-  if ((Math.floor(Math.random() * 5) + 1) > 1) return
-  now = (new Date()).getTime()
   lastChannel = message.channel
+  if (message.content.indexOf('ronkus') === 0) {
+    lastChannel.send(markovs[Math.floor(Math.random() * markovs.length)].makeChain())
+    // lastChannel.send(markovs[Math.floor(Math.random() * markovs.length)].generateText(Math.floor(Math.random() * 150) + 5))
+  }
+  if ((Math.floor(Math.random() * 4) + 1) > 1) return
+  now = (new Date()).getTime()
 
   /**
    * Do reactions
@@ -651,76 +764,90 @@ client.setInterval(() => {
         }
         if (disabled === 1) disabled = 2
       })
+      .catch(error => {
+        console.log(error)
+      })
     }
   })
 }, INTERVAL)
 
 client.login(process.env.TOKEN)
+.catch(err => {
+  console.log(err)
+})
 
-function fillMessageHistory (channel, stopAt, before) {
-  console.log('fetching message history... stopat: ' + stopAt + ' before: ' + before)
+function storeMessageHistory (before) {
+  if (!lastChannel) throw new Error('No channel')
+  if (!messages) throw new Error('Can\'t establish connection to MongoDB')
+
+  let messageHistory = []
+
+  console.log('fetching message history...')
+  if (before) console.log('before: ' + before)
   return (function () {
     if (before) return lastChannel.fetchMessages({ limit: 100, before: before })
     return lastChannel.fetchMessages({ limit: 100 })
   })()
-  .then(messages => {
-    messages.forEach(message => {
-      messageHistory.push({
+  .then(history => {
+    if (history.size === 0) {
+      console.log('finished!')
+      return
+    }
+    console.log('messagehistory length: ' + history.size)
+    history.forEach(message => {
+      let messageObject = {
         id: message.id,
-        content: message.content,
+        username: message.author.username,
+        author: message.author.id,
+        message: message.content,
         timestamp: message.createdTimestamp
+      }
+      messageHistory.push(messageObject)
+    })
+
+    var fetchMore = true
+
+    messageHistory.forEach(message => {
+      return messages.find({id: message.id})
+      .toArray((err, res) => {
+        if (err) throw err
+        if (res && res.length === 0) {
+          messages.insertOne(message, (err, data) => {
+            if (err) throw err
+          })
+        }
+        fetchMore = false
       })
     })
-    return new Promise(resolve => {
-      resolve(messageHistory[messageHistory.length - 1])
-    })
-  })
-  .then(lastMessage => {
-    if (
-      lastMessage.timestamp < stopAt ||
-      lastMessage.id === before
-    ) {
-      return new Promise(resolve => {
-        resolve(true)
-      })
-    } else {
-      return fillMessageHistory(channel, stopAt, lastMessage.id)
+    console.log(`saved messages in the database`)
+    if (fetchMore) {
+      setTimeout(() => {
+        storeMessageHistory(messageHistory[messageHistory.length - 1].id)
+      }, 500)
     }
   })
-}
-
-function filterMentions () {
-  messageHistory = messageHistory.filter(message => {
-    return message.content.indexOf(`<@${process.env.CLIENT_ID}>`) > -1
-  })
+  .catch(console.error)
 }
 
 process.stdin.on('readable', () => {
   const chunk = process.stdin.read()
   if (chunk !== null) {
-    if (lastChannel) {
-      if (chunk.toString().indexOf('history') > -1) {
-        fillMessageHistory(lastChannel, 1507680000000)
-        .then(result => {
-          if (result) {
-            filterMentions()
-            fs.writeFile('messageHistory.txt', messageHistory.reduce((fileString, history) => {
-              fileString += history.content + '\n'
-              return fileString
-            }, '\n'), () => {
-              console.log('finished writing messageHistory.txt')
-            })
-            console.log(messageHistory.length)
-          }
-        })
-        .catch(error => console.error(error))
-      } else {
-        try {
-          eval(chunk.toString())
-        } catch (e) {
-          console.log(e)
-          lastChannel.send(chunk.toString())
-        }
+    if (chunk.toString().indexOf('history') > -1) {
+      try {
+        storeMessageHistory()
+      } catch (e) {
+        console.log(e)
+      }
+    } else if (chunk.toString().indexOf('markov') > -1) {
+      console.log(markovs[Math.floor(Math.random() * markovs.length)].makeChain())
+      // console.log(markov.generateText(Math.floor(Math.random() * 150) + 5))
+      // console.log(markov.makeChain())
+    } else if (lastChannel) {
+      try {
+        eval(chunk.toString())
+      } catch (e) {
+        console.log(e)
+        lastChannel.send(chunk.toString())
       }
     }
   }
