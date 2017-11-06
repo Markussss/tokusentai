@@ -17,17 +17,20 @@ const INTERVAL = 20000
 
 const mongoURL = 'mongodb://localhost:27017/tokusentai'
 
+const mostUsedWords = /(\begentlig\b|\bkanskje\b|\bfaktisk\b|\bsikkert\b|\bsteike\b|\bkoffor\b|\bganske\b|\bskulle\b|\bfordi\b|\bnåken\b|\bikkje\b|\bkjøpe\b|\bkjeme\b|\bhekje\b|\bheile\b|\bmykje\b|\bigjen\b|\bheilt\b|\bhadde\b|\bberre\b|\beller\b|\btrur\b|\bvære\b|\bfikk\b|\blitt\b|\bsånn\b|\bmeir\b|\bblei\b|\bskal\b|\bgjer\b|\bover\b|\bogså\b|\bekje\b|\bblir\b|\bsann\b|\bfolk\b|\bveit\b|\balle\b|\bnåke\b|\bfrå\b|\bkan\b|\bmed\b|\binn\b|\bnår\b|\bmin\b|\bher\b|\benn\b|\bden\b|\bser\b|\btil\b|\bvil\b|\bder\b|\bbra\b|\bsom\b|\bkom\b|\bsej\b|\bopp\b|\bbli\b|\bmej\b|\bman\b|\bgår\b|\bfor\b|\bnei\b|\bdag\b|\bfør\b|\bsjå\b|\bkor\b|\bdej\b|\bsei\b|\bhan\b|\bhar\b|\bmen\b|\bdei\b|\bdet\b|\bja\b|\bva\b|\bom\b|\bas\b|\bmb\b|\bsa\b|\bta\b|\bfe\b|\bfå\b|\bto\b|\bej\b|\bså\b|\bvi\b|\bet\b|\bhe\b|\bat\b|\bei\b|\bso\b|\but\b|\bno\b|\bpå\b|\bjo\b|\bha\b|\boi\b|\bmå\b|\bda\b|\bgå\b|\ben\b|\bdu\b|\bgm\b|\bho\b|\bka\b|\bog\b|\bav\b|\bme\b|\bdå\b|\bi\b|\bå\b|\ba\b|\be\b)/g
+
 var disabled = 0 // 0 => not disabled, 1 => will disable after this message, 2 => disabled
 var now = (new Date()).getTime()
 
 var emojis = {}
 var lastChannel
-var messages // mongoDb collection
+var messages // mongoDb collection of message history
 
 var simpleMsgReply = []
 var simpleMsg = []
 var reactions = []
 var markovMessages = []
+var userMarkovs = {}
 var markovs = []
 // var messageHistory = []
 
@@ -42,6 +45,8 @@ function chunkArray (arr, chunkCount) {
   }
   return chunks
 }
+
+const endSign = ['.', '?', '??', '???', '?!', '??!', '??!!', '!', '!!', '!!!', '...', '-.-', ' :)', '', ' (:', ' :(', '!!!!!!!!', '!!!!!!!!111']
 
 const msg = [
   {
@@ -368,32 +373,42 @@ const msg = [
   }
 ]
 
+function usefullMessage (str) {
+  // \b(\w+)\s+\1\b
+  if (str.match(/\b(\w+)\s+\1\b/)) {
+    str = str.replace(/(\b(\w+))\s+\1\b/, '$1')
+  }
+  return str
+    .replace(/<.*>/g, '')
+    .replace(/:.*:/g, '')
+    .replace(/[^a-zA-ZæøåÆØÅ.@:/\-(),!?=&\s]+/g, '')
+    // .trim().split(' ').filter(t => t.length < 15).join(' ')
+    .trim()
+    .toLowerCase()
+}
+
 mongo.connect(mongoURL, (err, db) => {
   if (err) throw err
   messages = db.collection('messages')
-  // markov = new Markov(10, 'hey')
   messages.find(
     {
-      author: {$nin: [`${process.env.CLIENT_ID}`]}
+      author: {$nin: [`${process.env.CLIENT_ID}`]},
+      lang: {$in: ['nno', 'nob', 'swe', 'dan', 'und']}
     }, {
       _id: 0,
       message: 1
     }
-  ).toArray((err, res) => {
-    let endSign = ['.', '.', '.', '!', '!!', '...', '!!!!!!!!', '!!!!!!!!111']
+  ).sort({timestamp: 1}).toArray((err, res) => {
     if (err) throw err
     if (res && res.length > 0) {
       res.forEach(message => {
-        let usefullMessage = message.message.replace(/<.*>/g, '')
-        usefullMessage = usefullMessage.replace(/:.*:/g, '')
-        usefullMessage = usefullMessage.replace(/[^a-zA-ZæøåÆØÅ.:/\-,!\s]+/g, '')
-        usefullMessage = usefullMessage.trim().split(' ').filter(t => t.length > 3).join(' ')
-        if (usefullMessage.length > 1) {
-          markovMessages.push(usefullMessage + endSign[Math.floor(Math.random() * endSign.length - 1)])
+        let betterMessage = usefullMessage(message.message)
+        if (betterMessage.length > 1) {
+          markovMessages.push(betterMessage)
         }
       })
 
-      let targetMarkovs = Math.ceil(markovMessages.length / 2567)
+      let targetMarkovs = Math.ceil(markovMessages.length / 1000)
       let time
       let length
       let messagesLength = markovMessages.length
@@ -405,7 +420,7 @@ mongo.connect(mongoURL, (err, db) => {
       for (let i = 0; i < targetMarkovs; i++) {
         // let markov = new Markov(length, markovMessages[i][0])
         time = Date.now()
-        length = Math.floor(5 + (i / 2)) // Math.floor(Math.random() * 10) + 2
+        length = (i % 2 === 0 ? 2 : 8)
 
         // markovMessages[i].forEach((message, i) => {
         //   if (i === 0) return
@@ -420,7 +435,50 @@ mongo.connect(mongoURL, (err, db) => {
         )
         console.log(`learned ${markovMessages[i].length} messages in ${Date.now() - time}ms. this chain has a minlength of ${length}`)
       }
-      console.log(`created ${markovMessages.length} makrov chains! ready for use!`)
+      console.log(`created ${markovs.length} makrov chains!`)
+    }
+  })
+  messages.aggregate([
+    { $match: {
+      author: {$nin: [`${process.env.CLIENT_ID}`]},
+      lang: {
+        $in: ['nno', 'nob', 'swe', 'dan', 'und']
+      }
+    }}, {
+      $sort: {timestamp: -1}
+    }, { $group: {
+      _id: '$username',
+      messages: {
+        $push: '$message'
+      }
+    }}
+  ]).toArray((err, users) => {
+    if (err) throw err
+    if (users && users.length > 0) {
+      console.log('creating specialized markovs for each user with over 150 messages')
+      users.forEach(user => {
+        let messages = user.messages
+        if (messages.length > 150) {
+          messages.forEach(message => {
+            let betterMessage = usefullMessage(message)
+            if (betterMessage.length > 1) {
+              if (!userMarkovs[user._id]) userMarkovs[user._id] = []
+              userMarkovs[user._id].push(betterMessage)
+            }
+          })
+          if (userMarkovs[user._id].length > 0) {
+            if (userMarkovs[user._id].length > 1000) userMarkovs[user._id] = userMarkovs[user._id].slice(0, 1000)
+            markovs.push(
+              new MarkovGen({
+                input: userMarkovs[user._id],
+                minLength: 5
+              })
+            )
+            console.log('pushed 1 new userMarkov to markovs!')
+          }
+        }
+      })
+      console.log('finished! ready for use!')
     }
   })
 })
@@ -704,8 +762,24 @@ client.on('message', message => {
   if (message.author.bot) return
   lastChannel = message.channel
   if (message.content.indexOf('ronkus') === 0) {
-    lastChannel.send(markovs[Math.floor(Math.random() * markovs.length)].makeChain())
-    // lastChannel.send(markovs[Math.floor(Math.random() * markovs.length)].generateText(Math.floor(Math.random() * 150) + 5))
+    let startWord
+    let startWords
+    let markovMessage
+    if (message.content.indexOf(' ') > -1) {
+      startWords = message.content.replace(mostUsedWords, '').split(' ').filter(word => word.length > 0)
+      startWord = startWords[Math.floor(Math.random() * startWords.length)]
+      for (let i = 0; i < markovs.length; i++) {
+        if (markovs[i].hasStartWord(startWord)) {
+          markovMessage = markovs[i].makeChain(startWord)
+          break
+        }
+      }
+      if (!markovMessage) markovMessage = markovs[Math.floor(Math.random() * markovs.length)].makeChain(startWord)
+    } else {
+      markovMessage = markovs[Math.floor(Math.random() * markovs.length)].makeChain(startWord)
+    }
+    lastChannel.send(markovMessage + endSign[Math.floor(Math.random() * (endSign.length - 1))])
+    markovs = markovs.sort(() => Math.floor(Math.random() * 3) - 1)
   }
   if ((Math.floor(Math.random() * 4) + 1) > 1) return
   now = (new Date()).getTime()
@@ -800,6 +874,7 @@ function storeMessageHistory (before) {
         username: message.author.username,
         author: message.author.id,
         message: message.content,
+        legnth: message.content.length,
         timestamp: message.createdTimestamp
       }
       messageHistory.push(messageObject)
@@ -838,10 +913,6 @@ process.stdin.on('readable', () => {
       } catch (e) {
         console.log(e)
       }
-    } else if (chunk.toString().indexOf('markov') > -1) {
-      console.log(markovs[Math.floor(Math.random() * markovs.length)].makeChain())
-      // console.log(markov.generateText(Math.floor(Math.random() * 150) + 5))
-      // console.log(markov.makeChain())
     } else if (lastChannel) {
       try {
         eval(chunk.toString())
