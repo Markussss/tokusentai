@@ -9,11 +9,11 @@ var messages // mongoDb collection
 mongo.connect(mongoURL, (err, db) => {
   if (err) throw err
   messages = db.collection('messages')
-  // getMostUsedWords(messages)
-  // addWordCount(messages)
-  // addLength(messages)
-  // addLangGuess(messages)
-  // fixLangGuess(messages)
+  // addLength(messages) // 1
+  // addLangGuess(messages) // 2
+  // addWordCount(messages) // 3
+  // fixLangGuess(messages) // 4
+  // getMostUsedWords(messages) //
 })
 
 function fixLangGuess (messages) {
