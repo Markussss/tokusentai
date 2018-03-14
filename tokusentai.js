@@ -39,6 +39,21 @@ var chain = {
     }
     lastWord = undefined
   },
+  cleanChain: () => {
+    let total = 0
+    for (let word in chain) {
+      total = 0
+      if (typeof chain[word] === 'function') continue
+      let sum = Object.keys(chain[word]).reduce((sum, cur) => {
+        return sum + chain[word][cur]
+      }, 0)
+      for (let nextWord in chain[word]) {
+        chain[word][nextWord] = ((chain[word][nextWord] / sum) * 100)
+        total += chain[word][nextWord]
+        chain[word][nextWord] = total
+      }
+    }
+  },
   addWord: (word1, word2) => {
     if (!word1 || !word2) return
     if (!chain[word1]) {
@@ -50,32 +65,12 @@ var chain = {
     chain[word1][word2] += 1
   },
   getNextWord: (word, startWord) => {
-    let words
     if (chain[word]) {
-      /** very deterministic, leads to loops: */
-      // words = Object.keys(chain[word]).sort((a, b) => {
-      //   return chain[word][b] - chain[word][a]
-      // })
-      // words = words.filter(thisWord => chain[word][thisWord] === chain[word][words[0]])
-      // return words[Math.round(Math.random() * (words.length - 1))]
-
-      /** more random: */
-      words = Object.keys(chain[word]).reduce((arr, cur) => {
-        for (let i = 0; i < chain[word][cur]; i++) {
-          arr.push(cur)
-        }
-        return arr
-      }, [])
-      return words[Math.round(Math.random() * (words.length - 1))]
-    } else if (startWord && chain[startWord]) {
-      words = Object.keys(chain[startWord]).reduce((arr, cur) => {
-        for (let i = 0; i < chain[startWord][cur]; i++) {
-          arr.push(cur)
-        }
-        return arr
-      }, [])
-      return words[Math.round(Math.random() * (words.length - 1))]
-    } else return undefined
+      let n = randNum(0, 100)
+      return Object.keys(chain[word]).find(cur => {
+        return (chain[word][cur] > n)
+      })
+    }
   },
   generateChain: (len, startWord) => {
     let possibleStartWords = [startWord]
@@ -483,6 +478,7 @@ mongo.connect(mongoURL, (err, db) => {
       res.forEach(message => {
         chain.learnMessage(message.message)
       })
+      chain.cleanChain()
       console.log(`created markov chain, jiihhaaa!`)
     }
   })
