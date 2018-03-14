@@ -4,15 +4,13 @@
   "description": "simple Discord chat bot lmao",
   "main": "tokusentai.js",
   "dependencies": {
-    "discord.js": "^11.2.1",
+    "discord.js": "^11.3.2",
     "dotenv": "^4.0.0",
     "franc": "^3.1.1",
     "google-translate-api": "^2.3.0",
     "markov-generator": "^1.2.2",
-    "mongodb": "^2.2.33",
-    "mysql2": "^1.4.2",
-    "simple-markov": "^1.0.2",
-    "tcp-ping": "^0.1.1"
+    "mongodb": "^2.2.35",
+    "mysql2": "^1.5.2"
   },
   "devDependencies": {},
   "scripts": {

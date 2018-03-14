@@ -16,8 +16,6 @@ const INTERVAL = 1000
 
 const mongoURL = 'mongodb://localhost:27017/tokusentai'
 
-// const mostUsedWords = /(\bronkus\b|\begentlig\b|\bkanskje\b|\bfaktisk\b|\bsikkert\b|\bsteike\b|\bkoffor\b|\bganske\b|\bskulle\b|\bfordi\b|\bnåken\b|\bikkje\b|\bkjøpe\b|\bkjeme\b|\bhekje\b|\bheile\b|\bmykje\b|\bigjen\b|\bheilt\b|\bhadde\b|\bberre\b|\beller\b|\btrur\b|\bvære\b|\bfikk\b|\blitt\b|\bsånn\b|\bmeir\b|\bblei\b|\bskal\b|\bgjer\b|\bover\b|\bogså\b|\bekje\b|\bblir\b|\bsann\b|\bfolk\b|\bveit\b|\balle\b|\bnåke\b|\bfrå\b|\bkan\b|\bmed\b|\binn\b|\bnår\b|\bmin\b|\bher\b|\benn\b|\bden\b|\bser\b|\btil\b|\bvil\b|\bder\b|\bbra\b|\bsom\b|\bkom\b|\bsej\b|\bopp\b|\bbli\b|\bmej\b|\bman\b|\bgår\b|\bfor\b|\bnei\b|\bdag\b|\bfør\b|\bsjå\b|\bkor\b|\bdej\b|\bsei\b|\bhan\b|\bhar\b|\bmen\b|\bdei\b|\bdet\b|\bja\b|\bva\b|\bom\b|\bas\b|\bmb\b|\bsa\b|\bta\b|\bfe\b|\bfå\b|\bto\b|\bej\b|\bså\b|\bvi\b|\bet\b|\bhe\b|\bat\b|\bei\b|\bso\b|\but\b|\bno\b|\bpå\b|\bjo\b|\bha\b|\boi\b|\bmå\b|\bda\b|\bgå\b|\ben\b|\bdu\b|\bgm\b|\bho\b|\bka\b|\bog\b|\bav\b|\bme\b|\bdå\b|\bi\b|\bå\b|\ba\b|\be\b)/g
-
 var disabled = 0 // 0 => not disabled, 1 => will disable after this message, 2 => disabled
 var now = (new Date()).getTime()
 
@@ -573,6 +571,8 @@ function run () {
       emojis[emoji.name] = emoji
       return emojis
     }, emojis)
+
+    /** basic settings for the server */
     emojis.thinking = '🤔'
     emojis.bae = '😂'
     emojis.helmax = '👌'
@@ -848,7 +848,7 @@ function run () {
     console.log(`${message.author.username}: ${message.content}`)
     if (message.author.bot) return
     lastChannel = message.channel
-    if (message.content.indexOf('ronkus') === 0) {
+    if (message.content.indexOf('ronkus') > -1) {
       let startWord
       let startWords
       let markovMessage
@@ -934,6 +934,7 @@ function run () {
   client.login(process.env.TOKEN)
   .catch(err => {
     console.log(err)
+    process.exit()
   })
 }
 
@@ -941,7 +942,7 @@ function runForever () {
   try {
     run()
   } catch (e) {
-    runForever()
+    process.exit(0)
   }
 }
 
