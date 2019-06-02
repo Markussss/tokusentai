@@ -4,11 +4,11 @@
   "description": "simple Discord chat bot lmao",
   "main": "tokusentai.js",
   "dependencies": {
+    "@vitalets/google-translate-api": "^2.8.0",
     "discord.js": "^11.3.2",
     "dotenv": "^4.0.0",
+    "easy-markov-chain": "^1.0.0",
     "franc": "^3.1.1",
-    "google-translate-api": "^2.3.0",
-    "markov-generator": "^1.2.2",
     "mongodb": "^2.2.35",
     "mysql2": "^1.5.2"
   },

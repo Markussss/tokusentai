@@ -4,7 +4,8 @@ const fs = require('fs')
 const mongo = require('mongodb').MongoClient
 const Discord = require('discord.js')
 const franc = require('franc')
-const translate = require('google-translate-api')
+const translate = require('@vitalets/google-translate-api')
+const chain = require('easy-markov-chain')
 
 var client
 const REPLY = 0
@@ -27,69 +28,6 @@ var simpleMsgReply = []
 var simpleMsg = []
 var reactions = []
 
-var chain = {
-  learnMessage: message => {
-    let lastWord
-    message = usefullMessage(message)
-    if (message.length > 0) {
-      message.trim().replace(/ +/g, ' ').split(' ').forEach(word => {
-        chain.addWord(lastWord, word)
-        lastWord = word
-      })
-    }
-    lastWord = undefined
-  },
-  cleanChain: () => {
-    let total = 0
-    for (let word in chain) {
-      total = 0
-      if (typeof chain[word] === 'function') continue
-      let sum = Object.keys(chain[word]).reduce((sum, cur) => {
-        return sum + chain[word][cur]
-      }, 0)
-      for (let nextWord in chain[word]) {
-        chain[word][nextWord] = ((chain[word][nextWord] / sum) * 100)
-        total += chain[word][nextWord]
-        chain[word][nextWord] = total
-      }
-    }
-  },
-  addWord: (word1, word2) => {
-    if (!word1 || !word2) return
-    if (!chain[word1]) {
-      chain[word1] = {}
-    }
-    if (!chain[word1][word2]) {
-      chain[word1][word2] = 0
-    }
-    chain[word1][word2] += 1
-  },
-  getNextWord: (word, startWord) => {
-    if (chain[word]) {
-      let n = randNum(0, 100)
-      return Object.keys(chain[word]).find(cur => {
-        return (chain[word][cur] > n)
-      })
-    }
-  },
-  generateChain: (len, startWord) => {
-    let possibleStartWords = [startWord]
-    if (startWord && startWord.length > 4) possibleStartWords = Object.keys(chain).filter(word => word.indexOf(startWord) === 0)
-    startWord = possibleStartWords[randNum(0, possibleStartWords.length - 1)]
-    let curWord = startWord
-    if (!curWord) curWord = Object.keys(chain)[Math.round(Math.random() * Object.keys(chain).length - 1)]
-    let res = curWord
-    let nextWord
-    for (;len > 0; len--) {
-      nextWord = chain.getNextWord(curWord, startWord)
-      if (nextWord === curWord) nextWord = chain.getNextWord(startWord, curWord)
-      if (!nextWord) return res
-      res += ' ' + nextWord
-      curWord = nextWord
-    }
-    return res
-  }
-}
 
 // var messageHistory = []
 
@@ -434,28 +372,9 @@ function randNum (min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min // The maximum is inclusive and the minimum is inclusive
 }
 
-function usefullMessage (str) {
-  if (str.match(/\b(\w+)\s+\1\b/)) {
-    str = str.replace(/(\b(\w+))\s+\1\b/, '$1')
-  }
-  if (str.indexOf('http') > -1) return ''
-
-  return str
-    .replace(/<.*>/g, ' ')
-    .replace(/:.*:/g, ' ')
-    .replace(/[^a-zA-ZæøåÆØÅ./\-(),!?=&\s]+/g, ' ')
-    .replace(/^[.:/\-(),!?=&\s]+/g, ' ')
-    .replace(/[\r\n]/g, ' ')
-    .replace(/ +/g, ' ')
-    // .replace('ronkus', '')
-    // .trim().split(' ').filter(t => t.length < 15).join(' ')
-    .trim()
-    .toLowerCase()
-}
-
 mongo.connect(mongoURL, (err, db) => {
   if (err) {
-    console.log('start mongodb u fuck')
+    console.log('mongodb is not started')
     throw err
   }
   messages = db.collection('messages')
@@ -476,9 +395,9 @@ mongo.connect(mongoURL, (err, db) => {
     if (res && res.length > 0) {
       console.log(`creating markov chain out, weeeee~`)
       res.forEach(message => {
-        chain.learnMessage(message.message)
+        chain.learn(message.message)
       })
-      chain.cleanChain()
+      chain.normalize()
       console.log(`created markov chain, jiihhaaa!`)
     }
   })
@@ -839,7 +758,7 @@ function run () {
 
   client.on('message', message => {
     if (message.content.length > 10 && message.content.indexOf('ronkus') !== 0) {
-      chain.learnMessage(message.content)
+      chain.learn(message.content)
     }
     console.log(`${message.author.username}: ${message.content}`)
     if (message.author.bot) return
@@ -859,7 +778,7 @@ function run () {
         }, [])
         startWord = startWords[randNum(0, startWords.length)]
       }
-      markovMessage = chain.generateChain(randNum(5, 20), startWord)
+      markovMessage = chain.generate(randNum(5, 20), startWord)
       lastChannel.send(markovMessage + endSign[Math.floor(Math.random() * (endSign.length - 1))])
     }
     if ((Math.floor(Math.random() * 4) + 1) > 1) return

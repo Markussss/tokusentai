@@ -9,11 +9,11 @@ var messages // mongoDb collection
 mongo.connect(mongoURL, (err, db) => {
   if (err) throw err
   messages = db.collection('messages')
-  // addLength(messages) // 1
-  // addLangGuess(messages) // 2
-  // addWordCount(messages) // 3
-  // fixLangGuess(messages) // 4
-  // getMostUsedWords(messages) //
+//   addLength(messages) // 1
+//   addLangGuess(messages) // 2
+//   addWordCount(messages) // 3
+//   fixLangGuess(messages) // 4
+//   getMostUsedWords(messages) // for export
 })
 
 function fixLangGuess (messages) {
@@ -224,57 +224,3 @@ function getMostUsedWords(messages) {
   })
 }
 
-// saved for later
-// function storeMessageHistory (before) {
-//   if (!lastChannel) throw new Error('No channel')
-//   if (!messages) throw new Error('Can\'t establish connection to MongoDB')
-
-//   let messageHistory = []
-
-//   console.log('fetching message history...')
-//   if (before) console.log('before: ' + before)
-//   return (function () {
-//     if (before) return lastChannel.fetchMessages({ limit: 100, before: before })
-//     return lastChannel.fetchMessages({ limit: 100 })
-//   })()
-//   .then(history => {
-//     if (history.size === 0) {
-//       console.log('finished!')
-//       return
-//     }
-//     console.log('messagehistory length: ' + history.size)
-//     history.forEach(message => {
-//       let messageObject = {
-//         id: message.id,
-//         username: message.author.username,
-//         author: message.author.id,
-//         message: message.content,
-//         length: message.content.length,
-//         timestamp: message.createdTimestamp
-//       }
-//       messageHistory.push(messageObject)
-//     })
-
-//     var fetchMore = true
-
-//     messageHistory.forEach(message => {
-//       return messages.find({id: message.id})
-//       .toArray((err, res) => {
-//         if (err) throw err
-//         if (res && res.length === 0) {
-//           messages.insertOne(message, (err, data) => {
-//             if (err) throw err
-//           })
-//         }
-//         fetchMore = false
-//       })
-//     })
-//     console.log(`saved messages in the database`)
-//     if (fetchMore) {
-//       setTimeout(() => {
-//         storeMessageHistory(messageHistory[messageHistory.length - 1].id)
-//       }, 500)
-//     }
-//   })
-//   .catch(console.error)
-// }
