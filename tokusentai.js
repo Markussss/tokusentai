@@ -7,22 +7,24 @@ const franc = require('franc')
 const translate = require('@vitalets/google-translate-api')
 const chain = require('easy-markov-chain')
 const YAML = require('yaml')
+const isOnline = require('is-online')
 
 var client
 const REPLY = 0
 const SEND = 1
 
-const MESSAGE = 0
-const TIME = 1
-const INTERVAL = 1000
+const ONLINE_CHECK_INTERVAL = 60000
+const ONLINE_CHECK_MAX_FAILURES = 5
+
+var onlineCheckFailures = 0
 
 const DISABLED = 2
 const DISABLE_AFTER_THIS = 1
 const NOT_DISABLED = 0
 
-const mongoURL = 'mongodb://localhost:27017/tokusentai'
+var disabled = 0
 
-var disabled = 0 // 0 => not disabled, 1 => will disable after this message, 2 => disabled
+const mongoURL = 'mongodb://localhost:27017/tokusentai'
 
 var emojis = {}
 var lastChannel
@@ -49,14 +51,12 @@ const responseStrategies = [
         response: message => {
             message = message.content
             return translate(message, {to: 'no'})
-            .then(function (response) {
-                return new Promise(function (resolve, reject) {
-                    resolve(
-                        `Moonrunes ${emojis.RRRREEEE} \n` +
-                        response.text + '\n' +
-                        `${emojis.RRRREEEE} ${emojis.RRRREEEE} ${emojis.RRRREEEE} ${emojis.RRRREEEE} ${emojis.RRRREEEE} ${emojis.RRRREEEE}`
-                    )
-                })
+            .then(response => {
+                return Promise.resolve(
+                    `Moonrunes ${emojis.RRRREEEE} \n` +
+                    response.text + '\n' +
+                    `${emojis.RRRREEEE} ${emojis.RRRREEEE} ${emojis.RRRREEEE} ${emojis.RRRREEEE} ${emojis.RRRREEEE} ${emojis.RRRREEEE}`
+                )
             })
             .catch(error => {
                 console.error(error)
@@ -184,7 +184,7 @@ const responseStrategies = [
     },
     {
         trigger: message => {
-            return message === `<@${process.env.CLIENT_ID}> github`
+            return message.includes(`<@${process.env.CLIENT_ID}>`) && message.includes('github')
         },
         response: message => {
             message = message.content
@@ -208,10 +208,6 @@ const responseStrategies = [
 
                 if (Array.isArray(response)) {
                     response = randomArrayEntry(response)
-                }
-
-                if (!response) {
-                    reject(`missing proper response for: "${message}"`)
                 }
                 resolve(response)
             })
@@ -277,16 +273,6 @@ const responseStrategies = [
     },
 ]
 
-function randNum(min, max) {
-    min = Math.ceil(min)
-    max = Math.floor(max)
-    return Math.floor(Math.random() * (max - min + 1)) + min // The maximum is inclusive and the minimum is inclusive
-}
-
-function randomArrayEntry(array) {
-    return array[randNum(0, array.length - 1)]
-}
-
 mongo.connect(mongoURL, (err, db) => {
     if (err) {
         console.log('mongodb is not started')
@@ -318,6 +304,36 @@ mongo.connect(mongoURL, (err, db) => {
     })
 })
 
+process.stdin.on('readable', () => {
+    const chunk = process.stdin.read()
+    if (chunk !== null) {
+        if (chunk.toString().indexOf('history') > -1) {
+            try {
+                storeMessageHistory()
+            } catch (err) {
+                console.error(err)
+            }
+        } else if (lastChannel) {
+            try {
+                eval(chunk.toString())
+            } catch (err) {
+                console.error(err)
+                lastChannel.send(chunk.toString())
+            }
+        }
+    }
+})
+
+function randNum(min, max) {
+    min = Math.ceil(min)
+    max = Math.floor(max)
+    return Math.floor(Math.random() * (max - min + 1)) + min // The maximum is inclusive and the minimum is inclusive
+}
+
+function randomArrayEntry(array) {
+    return array[randNum(0, array.length - 1)]
+}
+
 function storeMessageHistory (before) {
     if (!lastChannel) throw new Error('No channel')
     if (!messages) throw new Error('Can\'t establish connection to MongoDB')
@@ -326,7 +342,7 @@ function storeMessageHistory (before) {
 
     console.log('fetching message history...')
     if (before) console.log('before: ' + before)
-    return (function () {
+    return (() => {
         if (before) return lastChannel.fetchMessages({ limit: 100, before: before })
         return lastChannel.fetchMessages({ limit: 100 })
     })()
@@ -372,26 +388,6 @@ function storeMessageHistory (before) {
     .catch(console.error)
 }
 
-process.stdin.on('readable', () => {
-    const chunk = process.stdin.read()
-    if (chunk !== null) {
-        if (chunk.toString().indexOf('history') > -1) {
-            try {
-                storeMessageHistory()
-            } catch (err) {
-                console.error(err)
-            }
-        } else if (lastChannel) {
-            try {
-                eval(chunk.toString())
-            } catch (err) {
-                console.error(err)
-                lastChannel.send(chunk.toString())
-            }
-        }
-    }
-})
-
 function run () {
     client = new Discord.Client()
 
@@ -423,13 +419,13 @@ function run () {
         reactions = [
             {
                 trigger: ':hm thinking:',
-                reaction: message => {
+                react: message => {
                     message.react(emojis.thinking)
                 }
             },
             {
                 trigger: emojis.bae.toString(),
-                reaction: message => {
+                react: message => {
                     message.react(emojis.bae)
                     .then(() => {
                         return message.react(emojis.helmax)
@@ -444,7 +440,7 @@ function run () {
             },
             {
                 trigger: emojis.helmax.toString(),
-                reaction: message => {
+                react: message => {
                     message.react(emojis.helmax)
                     .then(() => {
                         return message.react(emojis.helmax)
@@ -459,7 +455,7 @@ function run () {
             },
             {
                 trigger: emojis.hundred.toString(),
-                reaction: message => {
+                react: message => {
                     message.react(emojis.hundred)
                     .then(() => {
                         return message.react(emojis.helmax)
@@ -474,13 +470,13 @@ function run () {
             },
             {
                 trigger: emojis.thinking.toString(),
-                reaction: message => {
+                react: message => {
                     message.react(emojis.thinking)
                 }
             },
             {
                 trigger: emojis.weed.toString(),
-                reaction: message => {
+                react: message => {
                     message.react(emojis.yeye)
                     .catch(error => {
                         console.error(error)
@@ -489,7 +485,7 @@ function run () {
             },
             {
                 trigger: emojis.weed.toString(),
-                reaction: message => {
+                react: message => {
                     message.react(emojis.weed)
                     .then(() => {
                         return message.react(emojis.four)
@@ -507,7 +503,7 @@ function run () {
             },
             {
                 trigger: 'kuk',
-                reaction: message => {
+                react: message => {
                     message.react(emojis.p1)
                     .then(() => {
                         return message.react(emojis.p2)
@@ -528,7 +524,7 @@ function run () {
             },
             {
                 trigger: 'elska hars',
-                reaction: message => {
+                react: message => {
                     message.react(emojis.weed)
                     .then(() => {
                         return message.react(emojis.four)
@@ -546,7 +542,7 @@ function run () {
             },
             {
                 trigger: 'smoke weed everyday',
-                reaction: message => {
+                react: message => {
                     message.react(emojis.weed)
                     .then(() => {
                         return message.react(emojis.four)
@@ -564,7 +560,7 @@ function run () {
             },
             {
                 trigger: 'fitte penga hars',
-                reaction: message => {
+                react: message => {
                     message.react(emojis.weed)
                     .then(() => {
                         return message.react(emojis.four)
@@ -636,18 +632,26 @@ function run () {
     })
 
     client.login(process.env.TOKEN)
-    .catch(err => {
-        console.error(err)
-        process.exit()
-    })
 }
 
 function runForever () {
     try {
         run()
-    } catch (e) {
+    } catch (error) {
+        console.error(error)
         process.exit(0)
     }
+    setInterval(async () => {
+        let online = await isOnline()
+        if (!online) {
+            onlineCheckFailures += 1
+            if (onlineCheckFailures >= ONLINE_CHECK_MAX_FAILURES) {
+                process.exit(0)
+            }
+        } else {
+            onlineCheckFailures = 0
+        }
+    }, ONLINE_CHECK_INTERVAL)
 }
 
 runForever()

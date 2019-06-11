@@ -9,6 +9,7 @@
     "dotenv": "^4.0.0",
     "easy-markov-chain": "^1.0.0",
     "franc": "^3.1.1",
+    "is-online": "^8.2.0",
     "mongodb": "^2.2.35",
     "mysql2": "^1.5.2",
     "yaml": "^1.6.0"
