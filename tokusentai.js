@@ -639,14 +639,14 @@ function runForever () {
         run()
     } catch (error) {
         console.error(error)
-        process.exit(0)
+        process.exit(1)
     }
     setInterval(async () => {
         let online = await isOnline()
         if (!online) {
             onlineCheckFailures += 1
             if (onlineCheckFailures >= ONLINE_CHECK_MAX_FAILURES) {
-                process.exit(0)
+                process.exit(1)
             }
         } else {
             onlineCheckFailures = 0
