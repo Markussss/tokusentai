@@ -1,13 +1,13 @@
 require('dotenv').config()
 
 const fs = require('fs')
-const mongo = require('mongodb').MongoClient
 const Discord = require('discord.js')
 const franc = require('franc')
 const translate = require('@vitalets/google-translate-api')
 const chain = require('easy-markov-chain')
 const YAML = require('yaml')
 const isOnline = require('is-online')
+const sqlite3 = require('sqlite3').verbose()
 
 var client
 const REPLY = 0
@@ -24,18 +24,15 @@ const NOT_DISABLED = 0
 
 var disabled = 0
 
-const mongoURL = 'mongodb://localhost:27017/tokusentai'
-
 var emojis = {}
 var lastChannel
-var messages // mongoDb collection of message history
+var messages
 
 var simpleMessageReplies = YAML.parse(fs.readFileSync('./simple-message-replies.yml', 'utf-8'))
 const simpleMessages = YAML.parse(fs.readFileSync('./simple-messages.yml', 'utf-8'))
 const simpleFuzzyMessages = YAML.parse(fs.readFileSync('./simple-fuzzy-messages.yml', 'utf-8'))
 
 var reactions = []
-
 
 const endSign = ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '', '', '', '', '', '', '', '', '', '?', '?', '?', '?!', '?!', '?!', '!', '!', '!', '...']
 
@@ -142,10 +139,10 @@ const responseStrategies = [
     {
         trigger: () => {
             let date = new Date()
-            return date.getHours() === 13 && date.getMinutes() === 37
+            return date.getHours() === 13 && date.getMaxutes() === 37
         },
         response: () => {
-            return new Promise(resolve => {
+   ax       return new Promise(resolve => {
                 resolve('leet :wink:')
             })
         },
@@ -273,47 +270,57 @@ const responseStrategies = [
     },
 ]
 
-mongo.connect(mongoURL, (err, db) => {
+async function getMaxId (channelId) {
+    return new Promise((resolve, reject) => {
+        db.get(`select max(id) id from messages where channel = ?`, [channelId],  (err, max) => {
+            if (err) {
+                reject(err)
+            }
+            resolve(max.id)
+        })
+    })
+}
+const db = new sqlite3.Database(process.env.DBPATH, err => {
     if (err) {
-        console.log('mongodb is not started')
         throw err
     }
-    messages = db.collection('messages')
-    messages.find(
-        {
-            author: {$nin: [`${process.env.CLIENT_ID}`]},
-            lang: {$in: ['nno', 'nob', 'swe', 'dan', 'und']},
-            wordCount: {
-                // $lte: 6,
-                $gt: 6
-            }
-        }, {
-            _id: 0,
-            message: 1
-        }
-    ).sort({timestamp: 1}).toArray((err, res) => {
-        if (err) throw err
-        if (res && res.length > 0) {
-            console.log(`creating markov chain out, weeeee~`)
-            res.forEach(message => {
-                chain.learn(message.message)
-            })
-            chain.normalize()
-            console.log(`created markov chain, jiihhaaa!`)
-        }
+    console.log('connected to database')
+
+    client.
+    let maxId = getMaxId()
+
+    db.serialize(() => {
+        runForever()
     })
+    // messages.find(
+    //     {
+    //         author: {$nin: [`${process.env.CLIENT_ID}`]},
+    //         lang: {$in: ['nno', 'nob', 'swe', 'dan', 'und']},
+    //         wordCount: {
+    //             // $lte: 6,
+    //             $gt: 6
+    //         }
+    //     }, {
+    //         _id: 0,
+    //         message: 1
+    //     }
+    // ).sort({timestamp: 1}).toArray((err, res) => {
+    //     if (err) throw err
+    //     if (res && res.length > 0) {
+    //         console.log(`creating markov chain out, weeeee~`)
+    //         res.forEach(message => {
+    //             chain.learn(message.message)
+    //         })
+    //         chain.normalize()
+    //         console.log(`created markov chain, jiihhaaa!`)
+    //     }
+    // })
 })
 
 process.stdin.on('readable', () => {
     const chunk = process.stdin.read()
     if (chunk !== null) {
-        if (chunk.toString().indexOf('history') > -1) {
-            try {
-                storeMessageHistory()
-            } catch (err) {
-                console.error(err)
-            }
-        } else if (lastChannel) {
+        if (lastChannel) {
             try {
                 eval(chunk.toString())
             } catch (err) {
@@ -334,58 +341,32 @@ function randomArrayEntry(array) {
     return array[randNum(0, array.length - 1)]
 }
 
-function storeMessageHistory (before) {
-    if (!lastChannel) throw new Error('No channel')
-    if (!messages) throw new Error('Can\'t establish connection to MongoDB')
 
-    let messageHistory = []
+/**
+ * @param { Message } message
+ */
+function storeMessage(message) {
+    console.log(message)
+    let sql = `insert into messages (id, username, author, message, channel, length, timestamp, lang) values (?, ?, ?, ?, ?, ?, ?, ?)`
 
-    console.log('fetching message history...')
-    if (before) console.log('before: ' + before)
-    return (() => {
-        if (before) return lastChannel.fetchMessages({ limit: 100, before: before })
-        return lastChannel.fetchMessages({ limit: 100 })
-    })()
-    .then(history => {
-        if (history.size === 0) {
-            console.log('finished!')
-            return
-        }
-        console.log('messagehistory length: ' + history.size)
-        history.forEach(message => {
-            let messageObject = {
-                id: message.id,
-                username: message.author.username,
-                author: message.author.id,
-                message: message.content,
-                legnth: message.content.length,
-                timestamp: message.createdTimestamp
+    let lang = franc(message.content.repeat(10))
+    db.run(
+        sql,
+        [
+            message.id,
+            message.author.username,
+            message.author.id,
+            message.content,
+            message.channel.id,
+            message.content.length,
+            message.createdTimestamp,
+            lang,
+        ],
+        err => {
+            if (err) {
+                console.log(err)
             }
-            messageHistory.push(messageObject)
         })
-
-        var fetchMore = true
-
-        messageHistory.forEach(message => {
-            return messages.find({id: message.id})
-            .toArray((err, res) => {
-                if (err) throw err
-                if (res && res.length === 0) {
-                    messages.insertOne(message, (err, data) => {
-                        if (err) throw err
-                    })
-                }
-                fetchMore = false
-            })
-        })
-        console.log(`saved messages in the database`)
-        if (fetchMore) {
-            setTimeout(() => {
-                storeMessageHistory(messageHistory[messageHistory.length - 1].id)
-            }, 500)
-        }
-    })
-    .catch(console.error)
 }
 
 function run () {
@@ -584,6 +565,8 @@ function run () {
             return
         }
 
+        storeMessage(incomingMessage)
+
         if (incomingMessage.content.length > 10 && !incomingMessage.content.includes(process.env.BOT_NAME)) {
             chain.learn(incomingMessage.content)
         }
@@ -654,4 +637,3 @@ function runForever () {
     }, ONLINE_CHECK_INTERVAL)
 }
 
-runForever()
