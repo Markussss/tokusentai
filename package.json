@@ -4,15 +4,15 @@
   "description": "simple Discord chat bot lmao",
   "main": "tokusentai.js",
   "dependencies": {
-    "@vitalets/google-translate-api": "^2.8.0",
-    "discord.js": "^11.3.2",
+    "@vitalets/google-translate-api": "^4.0.0",
+    "discord.js": "^11.6.4",
     "dotenv": "^4.0.0",
     "easy-markov-chain": "^1.0.0",
     "franc": "^3.1.1",
-    "is-online": "^8.2.0",
+    "is-online": "^8.4.0",
     "mysql2": "^1.5.2",
-    "sqlite3": "^4.1.0",
-    "yaml": "^1.6.0"
+    "sqlite3": "^4.2.0",
+    "yaml": "^1.10.0"
   },
   "devDependencies": {},
   "scripts": {
