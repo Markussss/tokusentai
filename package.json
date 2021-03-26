@@ -1,0 +1,33 @@
+{
+  "name": "tokusentai",
+  "version": "1.0.0",
+  "description": "simple Discord chat bot lmao",
+  "main": "tokusentai.js",
+  "dependencies": {
+    "@vitalets/google-translate-api": "^4.0.0",
+    "discord.js": "^11.6.4",
+    "dotenv": "^4.0.0",
+    "easy-markov-chain": "^1.0.0",
+    "franc": "^3.1.1",
+    "is-online": "^8.4.0",
+    "mysql2": "^1.5.2",
+    "sqlite3": "^4.2.0",
+    "yaml": "^1.10.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node tokusentai.js",
+    "fill": "node fillDatabase.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Markussss/tokusentai.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Markussss/tokusentai/issues"
+  },
+  "homepage": "https://github.com/Markussss/tokusentai#readme"
+}

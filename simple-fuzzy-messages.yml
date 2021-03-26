@@ -1,0 +1,42 @@
+# If a message contains one of these strings, the bot will send a response, but it doesn't have to be an exact match.
+#
+# The format is like this:
+#
+# trigger message: response
+#
+# trigger message:
+#   - possible response 1
+#   - possible response 2
+#   - possible response 3
+#   - etc
+#
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+bra bot: hø snakka du om mj
+FAEN:
+  - 'Tell til ti, kompis. :slight_smile:'
+  - 'Ta dæ en ronk, kompis. :slight_smile:'
+  - ':frowning2: e du sur :slight_smile:'
+  - 'Slutt å vær sur :frowning2:'
+  - 'Slutt å surke :frowning2:'
+grr:
+  - 'Tell til ti, kompis. :slight_smile:'
+  - 'Ta dæ en ronk, kompis. :slight_smile:'
+  - ':frowning2: e du sur :slight_smile:'
+  - 'Slutt å vær sur :frowning2:'
+  - 'Slutt å surke :frowning2:'
+jesus fucking christ:
+  - 'Tell til ti, kompis. :slight_smile:'
+  - 'Ta dæ en ronk, kompis. :slight_smile:'
+  - ':frowning2: e du sur :slight_smile:'
+  - 'Slutt å vær sur :frowning2:'
+  - 'Slutt å surke :frowning2:'
+RREEE:
+  - 'Tell til ti, kompis. :slight_smile:'
+  - 'Ta dæ en ronk, kompis. :slight_smile:'
+  - ':frowning2: e du sur :slight_smile:'
+  - 'Slutt å vær sur :frowning2:'
+  - 'Slutt å surke :frowning2:'
+bgrs: Bad Game! Run! Escape!
+runescape: Bad Game! Run! Escape!
+get it: 'get it? :wink:'
