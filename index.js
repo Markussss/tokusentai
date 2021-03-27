@@ -1,12 +1,10 @@
 import inquirer from 'inquirer';
 // import { fillDatabase, startBot } from './bot.js';
-import { createTables, query } from './database.js';
+import { createTables, query, fill } from './database.js';
 import { log, info, emptyLine } from './log.js';
+import db from './db.js';
 
 const prompt = inquirer.createPromptModule();
-
-const fill = 'fill';
-const start = 'start';
 
 const questions = [
   {
@@ -14,25 +12,28 @@ const questions = [
     name: 'what',
     message: 'What do you want to do?',
     choices: [
-      { name: 'Fill the database', value: fill },
-      { name: 'Start the bot', value: start },
+      { name: 'Fill the database', value: 'fill' },
+      { name: 'Start the bot', value: 'start' },
     ],
   },
 ];
 
 const init = async () => {
-  info('Started');
   const answer = await prompt(questions);
-  if (answer.what === fill) {
+  if (answer.what === 'fill') {
     log('Awaiting createTables');
     await createTables();
-    log(await query('select count(*) as count from messages'));
+    await fill('messages.csv');
   }
-  if (answer.what === start) {
-    await startBot();
+  if (answer.what === 'start') {
+    // startBot();
   }
-  info('Finished');
-  emptyLine();
+  return undefined;
 };
 
-init();
+(async () => {
+  info('Started');
+  await init();
+  info('Finished');
+  emptyLine();
+})();

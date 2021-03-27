@@ -1,7 +1,11 @@
 import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
 
-const db = new sqlite3.Database('tokusentai.db', (err) => {
-  if (err) throw new Error(err);
-});
+export async function getDb() {
+  return open({
+    filename: 'tokusentai.db',
+    driver: sqlite3.Database,
+  });
+}
 
-export default db;
+export default {};
