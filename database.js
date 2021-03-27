@@ -58,11 +58,13 @@ export async function fill(filePath = '') {
     log(`Processing ${output.length} messages split in ${Math.floor(output.length / perChunk)} chunks with ${perChunk} in each`);
     const progress = new SingleBar({}, Presets.shades_classic);
     progress.start(Math.floor(output.length / perChunk), 0);
+    await db.run('begin transaction');
     await Promise.all(
       _.chunk(output, perChunk).map((rows, index) => (
         statement.run(_.flatten(rows)).then(() => progress.update(index))
       )),
     );
+    await db.run('commit transaction');
     progress.update(output.length);
     progress.stop();
     emptyLine();
