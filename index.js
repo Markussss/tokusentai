@@ -2,7 +2,6 @@ import inquirer from 'inquirer';
 // import { fillDatabase, startBot } from './bot.js';
 import { createTables, query, fill } from './database.js';
 import { log, info, emptyLine } from './log.js';
-import db from './db.js';
 
 const prompt = inquirer.createPromptModule();
 
@@ -24,6 +23,7 @@ const init = async () => {
     log('Awaiting createTables');
     await createTables();
     await fill('messages.csv');
+    log(await query('select count(*) as count from messages'));
   }
   if (answer.what === 'start') {
     // startBot();

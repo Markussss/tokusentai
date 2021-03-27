@@ -1,6 +1,7 @@
 import parse from 'csv-parse';
 import { readFile } from 'fs/promises'; // eslint-disable-line import/no-unresolved
 import { SingleBar, Presets } from 'cli-progress';
+import _ from 'lodash';
 
 import { getDb } from './db.js';
 import { DEBUG } from './config.js';
@@ -50,14 +51,17 @@ export async function fill(filePath = '') {
     });
 
     log(`Parsed ${filePath}`);
+    const perChunk = 99;
     const statement = await db.prepare(`insert into messages (
       id, username, author, message, channel, length, timestamp, lang, wordcount, num
-    ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    log(`Processing ${output.length} messages`);
+    ) values ${'(?, ?, ?, ?, ?, ?, ?, ?, ?, ?), '.repeat(perChunk - 1)} (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    log(`Processing ${output.length} messages split in ${Math.floor(output.length / perChunk)} chunks with ${perChunk} in each`);
     const progress = new SingleBar({}, Presets.shades_classic);
-    progress.start(output.length, 0);
+    progress.start(Math.floor(output.length / perChunk), 0);
     await Promise.all(
-      output.map((row, index) => statement.run(row).then(() => progress.update(index))),
+      _.chunk(output, perChunk).map((rows, index) => (
+        statement.run(_.flatten(rows)).then(() => progress.update(index))
+      )),
     );
     progress.update(output.length);
     progress.stop();
