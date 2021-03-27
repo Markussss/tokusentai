@@ -1,39 +1,15 @@
-require("dotenv").config();
+require('dotenv').config();
 
-const franc = require("franc");
-const Discord = require("discord.js");
-const sqlite3 = require("sqlite3").verbose();
+const franc = require('franc');
+const Discord = require('discord.js');
+const sqlite3 = require('sqlite3').verbose();
+
+import { db, create } from './database';
 
 const channelId = process.argv[2];
 
-const DEBUG = false;
+const DEBUG = true;
 const LIMIT = 100;
-
-let db = new sqlite3.Database(process.env.DBPATH, (err) => {
-  if (err) {
-    console.error(err);
-  }
-});
-db.serialize(() => {
-  if (DEBUG) {
-    db.exec(`drop table messages`);
-    console.log("dropped message table");
-  }
-  let sql = `create table if not exists messages (
-        id varchar(64) primary key,
-        username varchar(255),
-        author varchar(64),
-        message text,
-        channel varchar(64),
-        length integer unsigned,
-        timestamp integer unsigned,
-        lang char(3),
-        wordcount integer unsigned
-    )`;
-  db.exec(sql);
-  console.log("connected to database and message table exists");
-  init();
-});
 
 async function fillDatabase() {
   let after = await getMaxId(channelId);
@@ -47,7 +23,7 @@ async function fillDatabase() {
     let c = client.channels.get(cid);
     if (c.id === channelId) {
       channel = c;
-    } else if (c.type === "text") {
+    } else if (c.type === 'text') {
       after = await getMaxId(c.id);
       await storeNewMessages(c, after);
     }
@@ -141,7 +117,7 @@ async function storeMessageHistory(channel, before, ts) {
   let history = await getMessageHistory(channel, before);
 
   if (history.size === 0) {
-    console.log("finished!");
+    console.log('finished!');
     return;
   }
 
@@ -155,7 +131,7 @@ async function storeMessageHistory(channel, before, ts) {
       storeMessageHistory(channel, before, ts);
     });
   } else {
-    console.log("finished storing messages");
+    console.log('finished storing messages');
     db.close();
     process.exit(0);
   }
@@ -176,7 +152,7 @@ async function storeNewMessages(channel, after, ts) {
   let history = await getNewMessages(channel, after);
 
   if (history.size === 0) {
-    console.log("finished!");
+    console.log('finished!');
     return;
   }
 
@@ -190,6 +166,6 @@ async function storeNewMessages(channel, after, ts) {
       storeNewMessages(channel, after, ts);
     }, 500);
   } else {
-    console.log("finished storing messages");
+    console.log('finished storing messages');
   }
 }

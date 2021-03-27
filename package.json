@@ -12,11 +12,14 @@
     "franc": "^3.1.1",
     "inquirer": "^8.0.0",
     "is-online": "^8.4.0",
+    "lodash": "^4.17.21",
     "mysql2": "^1.5.2",
     "sqlite3": "^4.2.0",
     "yaml": "^1.10.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "eslint": "^7.23.0"
+  },
   "scripts": {
     "start": "node tokusentai.js",
     "fill": "node fillDatabase.js"
