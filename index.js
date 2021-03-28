@@ -1,7 +1,12 @@
 import inquirer from 'inquirer';
-// import { fillDatabase, startBot } from './bot.js';
-import { createTables, query, fill } from './database.js';
+import dotenv from 'dotenv';
+
+import {
+  createTables, query, fill, download,
+} from './database.js';
 import { log, info, emptyLine } from './log.js';
+
+dotenv.config();
 
 const prompt = inquirer.createPromptModule();
 
@@ -11,7 +16,9 @@ const questions = [
     name: 'what',
     message: 'What do you want to do?',
     choices: [
-      { name: 'Fill the database', value: 'fill' },
+      { name: 'Create tables', value: 'create' },
+      { name: 'Fill the database from messages.csv', value: 'fill' },
+      { name: 'Fill the database from API', value: 'download' },
       { name: 'Start the bot', value: 'start' },
     ],
   },
@@ -19,21 +26,26 @@ const questions = [
 
 const init = async () => {
   const answer = await prompt(questions);
-  if (answer.what === 'fill') {
+  if (answer.what === 'create') {
     log('Awaiting createTables');
     await createTables();
+  } else if (answer.what === 'fill') {
     await fill('messages.csv');
     log(await query('select count(*) as count from messages'));
-  }
-  if (answer.what === 'start') {
+  } else if (answer.what === 'download') {
+    await download();
+  } else if (answer.what === 'start') {
     // startBot();
   }
   return undefined;
 };
 
-(async () => {
+async function start() {
   info('Started');
   await init();
   info('Finished');
   emptyLine();
-})();
+  setTimeout(start, 0);
+}
+
+start();
