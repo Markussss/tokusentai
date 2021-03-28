@@ -1,7 +1,9 @@
 import Discord from 'discord.js';
 import _ from 'lodash';
+import inquirer from 'inquirer';
 
 import { log, info } from './log.js';
+import responseRegistry from './responses.js';
 
 let client;
 
@@ -48,6 +50,33 @@ export async function getMessages(channelId, messageId, backward = false, handle
       edgeMessage = _.maxBy(messageHistory, 'id');
     }
     searchQuery[backward ? 'before' : 'after'] = edgeMessage.id;
+  }
+}
+
+async function getResponse(message) {
+  const responses = await Promise.all(
+    responseRegistry.map((response) => response.responder(message)),
+  );
+  return _.sample(responses.filter((response) => !!response));
+}
+
+export async function startFake() {
+  const prompt = inquirer.createPromptModule();
+  let input;
+  let response;
+  while (!input || input.message !== 'exit') {
+    input = await prompt({ // eslint-disable-line no-await-in-loop
+      type: 'input',
+      name: 'message',
+      message: '>',
+    });
+
+    if (input.message) {
+      response = await getResponse(input.message); // eslint-disable-line no-await-in-loop
+      if (response) {
+        log(response);
+      }
+    }
   }
 }
 

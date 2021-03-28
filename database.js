@@ -165,7 +165,7 @@ export async function fillResponses(type, file) {
           ]));
         }
         return statement.run([
-          trigger, responses[trigger], type, 1.0
+          trigger, responses[trigger], type, 1.0,
         ]);
       }),
     ),

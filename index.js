@@ -5,6 +5,7 @@ import {
   createTables, query, fillMessages, fillResponses, download,
 } from './database.js';
 import { log, info, emptyLine } from './log.js';
+import { startFake } from './bot.js';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ const questions = [
       { name: 'Fill messages table from messages.csv', value: 'fill-messages' },
       { name: 'Fill messages table from API', value: 'download' },
       { name: 'Fill response table from yaml files', value: 'fill-responses' },
+      { name: 'Start a fake bot', value: 'fake' },
       { name: 'Start the bot', value: 'start' },
       { name: 'Exit', value: 'exit' },
     ],
@@ -38,10 +40,12 @@ const init = async () => {
     await download();
   } else if (answer.what === 'fill-responses') {
     await Promise.all([
-      fillResponses('reply', 'simple-message-replies.yml'),
-      fillResponses('match', 'simple-messages.yml'),
-      fillResponses('fuzzy', 'simple-fuzzy-messages.yml'),
+      fillResponses('reply', 'settings/simple-message-replies.yml'),
+      fillResponses('match', 'settings/simple-messages.yml'),
+      fillResponses('fuzzy', 'settings/simple-fuzzy-messages.yml'),
     ]);
+  } else if (answer.what === 'fake') {
+    await startFake();
   } else if (answer.what === 'start') {
     // startBot();
   } else if (answer.what === 'exit') {
