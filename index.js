@@ -2,7 +2,7 @@ import inquirer from 'inquirer';
 import dotenv from 'dotenv';
 
 import {
-  createTables, query, fill, download,
+  createTables, query, fillMessages, fillResponses, download,
 } from './database.js';
 import { log, info, emptyLine } from './log.js';
 
@@ -17,9 +17,11 @@ const questions = [
     message: 'What do you want to do?',
     choices: [
       { name: 'Create tables', value: 'create' },
-      { name: 'Fill the database from messages.csv', value: 'fill' },
-      { name: 'Fill the database from API', value: 'download' },
+      { name: 'Fill messages table from messages.csv', value: 'fill-messages' },
+      { name: 'Fill messages table from API', value: 'download' },
+      { name: 'Fill response table from yaml files', value: 'fill-responses' },
       { name: 'Start the bot', value: 'start' },
+      { name: 'Exit', value: 'exit' },
     ],
   },
 ];
@@ -29,13 +31,21 @@ const init = async () => {
   if (answer.what === 'create') {
     log('Awaiting createTables');
     await createTables();
-  } else if (answer.what === 'fill') {
-    await fill('messages.csv');
+  } else if (answer.what === 'fill-messages') {
+    await fillMessages('messages.csv');
     log(await query('select count(*) as count from messages'));
   } else if (answer.what === 'download') {
     await download();
+  } else if (answer.what === 'fill-responses') {
+    await Promise.all([
+      fillResponses('reply', 'simple-message-replies.yml'),
+      fillResponses('match', 'simple-messages.yml'),
+      fillResponses('fuzzy', 'simple-fuzzy-messages.yml'),
+    ]);
   } else if (answer.what === 'start') {
     // startBot();
+  } else if (answer.what === 'exit') {
+    process.exit(0);
   }
   return undefined;
 };

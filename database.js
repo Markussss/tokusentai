@@ -4,6 +4,7 @@ import { SingleBar, Presets } from 'cli-progress';
 import _ from 'lodash';
 import inquirer from 'inquirer';
 import franc from 'franc';
+import YAML from 'yaml';
 
 import { getDb } from './db.js';
 import { DEBUG } from './config.js';
@@ -12,10 +13,12 @@ import { getMessages } from './bot.js';
 
 export async function createTables() {
   const db = await getDb();
-  if (!db) throw new Error('No database supplied');
+  if (!db) throw new Error('No database found');
   if (DEBUG) {
-    db.exec('drop table messages');
+    await db.exec('drop table if exists messages');
     log('dropped message table');
+    await db.exec('drop table if exists responses');
+    log('dropped message responses');
   }
 
   await db.exec(`create table if not exists messages (
@@ -29,7 +32,16 @@ export async function createTables() {
       lang char(3),
       wordcount integer unsigned
   )`);
-  info('connected to database and message table exists');
+  info('Message table OK');
+
+  await db.exec(`create table if not exists responses (
+    trigger text,
+    response text,
+    type varchar(10),
+    probability float unsigned,
+    unique(trigger, response)
+  )`);
+  info('Response table OK');
   return undefined;
 }
 
@@ -87,9 +99,9 @@ async function storeMessages(messages) {
   return statement.finalize();
 }
 
-export async function fill(filePath) {
-  const fileContent = await readFile(filePath, 'utf-8');
-  log(`Got file contents from ${filePath}`);
+export async function fillMessages(file) {
+  const fileContent = await readFile(file, 'utf-8');
+  log(`Got file contents from ${file}`);
 
   const messages = await new Promise((resolve, reject) => {
     parse(fileContent, (parseErr, data) => {
@@ -98,7 +110,7 @@ export async function fill(filePath) {
     });
   });
 
-  log(`Parsed ${filePath}`);
+  log(`Parsed ${file}`);
   return storeMessages(messages.map((message) => message.slice(0, 9)));
 }
 
@@ -131,4 +143,31 @@ export async function download() {
   };
   await getMessages(channelId, oldestMessage.id, true, store);
   await getMessages(channelId, youngestMessage.id, false, store);
+}
+
+export async function fillResponses(type, file) {
+  const db = await getDb();
+  const fileContent = await readFile(file, 'utf-8');
+  log(`Got file contents from ${file}`);
+  const responses = YAML.parse(fileContent);
+  const triggers = Object.keys(responses);
+  const statement = await db.prepare(`insert into responses (
+    trigger, response, type, probability
+  ) values (
+    ?, ?, ?, ?
+  )`);
+  await Promise.all([
+    _.flatten(
+      triggers.map((trigger) => {
+        if (_.isArray(responses[trigger])) {
+          return responses[trigger].map((response) => statement.run([
+            trigger, response, type, (1 / responses[trigger].length),
+          ]));
+        }
+        return statement.run([
+          trigger, responses[trigger], type, 1.0
+        ]);
+      }),
+    ),
+  ]);
 }
