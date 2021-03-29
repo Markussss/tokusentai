@@ -19,6 +19,7 @@ async function getResponse(type, extraQuery = '', extraBinds = []) {
   const statement = await db.prepare(
     `select * from responses where type = ? ${extraQuery}`,
   );
+  log(statement);
   await statement.bind([type, ...extraBinds]);
   return statement.all();
 }
@@ -111,7 +112,7 @@ const responseRegistry = [
             .forEach((result) => markovChain.learn(result));
           markovChain.normalize();
         }
-        let seeds = message.replace(process.env.NAME, '')
+        const seeds = message.replace(process.env.NAME, '')
           .replace(/[^a-zA-ZæøåÆØÅ ]/g, '')
           .split(' ');
         return markovChain.generate(random(3, 30), seeds);

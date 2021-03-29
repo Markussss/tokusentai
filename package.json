@@ -1,34 +1,27 @@
 {
   "name": "tokusentai",
   "version": "1.0.0",
-  "description": "simple Discord chat bot lmao",
+  "description": "simple Discord chat bot",
   "main": "tokusentai.js",
   "type": "module",
   "dependencies": {
-    "@vitalets/google-translate-api": "^4.0.0",
     "cli-progress": "^3.9.0",
     "csv-parse": "^4.15.3",
     "discord.js": "^12.5.1",
     "dotenv": "^4.0.0",
     "easy-markov-chain": "^2.0.0",
-    "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-plugin-import": "^2.22.1",
     "franc": "^5.0.0",
     "inquirer": "^8.0.0",
-    "is-online": "^8.4.0",
     "lodash": "^4.17.21",
     "luxon": "^1.26.0",
-    "mysql2": "^1.5.2",
     "sqlite": "^4.0.19",
     "sqlite3": "^4.2.0",
     "yaml": "^1.10.0"
   },
   "devDependencies": {
-    "eslint": "^7.23.0"
-  },
-  "scripts": {
-    "start": "node tokusentai.js",
-    "fill": "node fillDatabase.js"
+    "eslint": "^7.23.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.22.1"
   },
   "repository": {
     "type": "git",
@@ -40,5 +33,10 @@
   "bugs": {
     "url": "https://github.com/Markussss/tokusentai/issues"
   },
-  "homepage": "https://github.com/Markussss/tokusentai#readme"
+  "homepage": "https://github.com/Markussss/tokusentai#readme",
+  "scripts": {
+    "start": "node index.js",
+    "bot:start": "node index.js start",
+    "bot:fake": "node index.js fake"
+  }
 }

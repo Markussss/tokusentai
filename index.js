@@ -1,4 +1,5 @@
 import inquirer from 'inquirer';
+import fs from 'fs/promises';
 import dotenv from 'dotenv';
 
 import {
@@ -11,24 +12,45 @@ dotenv.config();
 
 const prompt = inquirer.createPromptModule();
 
-const questions = [
-  {
-    type: 'list',
-    name: 'what',
-    message: 'What do you want to do?',
-    choices: [
-      { name: 'Create tables', value: 'create' },
-      { name: 'Fill messages table from messages.csv', value: 'fill-messages' },
-      { name: 'Fill messages table from API', value: 'download' },
-      { name: 'Fill response table from yaml files', value: 'fill-responses' },
-      { name: 'Start a fake bot', value: 'fake' },
-      { name: 'Start the bot', value: 'start' },
-      { name: 'Exit', value: 'exit' },
-    ],
-  },
-];
+async function importMessages(choice) {
+  try {
+    await fs.stat('./import/messages.csv');
+    return choice;
+  } catch {
+    return undefined;
+  }
+}
+
+async function importYaml(choice) {
+  try {
+    await Promise.all([
+      fs.stat('./import/simple-messages.yml'),
+      fs.stat('./import/simple-message-replies.yml'),
+      fs.stat('./import/simple-fuzzy-messages.yml'),
+    ]);
+    return choice;
+  } catch {
+    return undefined;
+  }
+}
 
 const init = async () => {
+  const questions = [
+    {
+      type: 'list',
+      name: 'what',
+      message: 'What do you want to do?',
+      choices: [
+        { name: 'Create tables', value: 'create' },
+        await importMessages({ name: 'Fill messages table from messages.csv', value: 'fill-messages' }),
+        { name: 'Fill messages table from API', value: 'download' },
+        await importYaml({ name: 'Fill response table from yaml files', value: 'fill-responses' }),
+        { name: 'Start a fake bot', value: 'fake' },
+        { name: 'Start the bot', value: 'start' },
+        { name: 'Exit', value: 'exit' },
+      ].filter((choice) => !!choice),
+    },
+  ];
   const answer = await prompt(questions);
   if (answer.what === 'create') {
     log('Awaiting createTables');
@@ -55,6 +77,15 @@ const init = async () => {
 };
 
 async function start() {
+  const skip = process.argv[2];
+  if (skip) {
+    if (skip === 'start') {
+      // await startBot();
+    } else if (skip === 'fake') {
+      await startFake();
+    }
+    process.exit(0);
+  }
   info('Started');
   await init();
   info('Finished');
