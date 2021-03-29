@@ -34,15 +34,15 @@ const init = async () => {
     log('Awaiting createTables');
     await createTables();
   } else if (answer.what === 'fill-messages') {
-    await fillMessages('../messages.csv');
+    await fillMessages('import/messages.csv');
     log(await query('select count(*) as count from messages'));
   } else if (answer.what === 'download') {
     await download();
   } else if (answer.what === 'fill-responses') {
     await Promise.all([
-      fillResponses('reply', 'settings/simple-message-replies.yml'),
-      fillResponses('match', 'settings/simple-messages.yml'),
-      fillResponses('fuzzy', 'settings/simple-fuzzy-messages.yml'),
+      fillResponses('reply', 'import/simple-message-replies.yml'),
+      fillResponses('match', 'import/simple-messages.yml'),
+      fillResponses('fuzzy', 'import/simple-fuzzy-messages.yml'),
     ]);
   } else if (answer.what === 'fake') {
     await startFake();

@@ -63,5 +63,5 @@ typings/
 # sqlite database
 *.sqlite
 
-settings/*
-!settings/.gitkeep
+import/*
+!import/.gitkeep
