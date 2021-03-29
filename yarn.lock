@@ -569,10 +569,10 @@ duplexer3@^0.1.4:
   resolved "https://registry.yarnpkg.com/duplexer3/-/duplexer3-0.1.4.tgz#ee01dd1cac0ed3cbc7fdbea37dc0a8f1ce002ce2"
   integrity sha1-7gHdHKwO08vH/b6jfcCo8c4ALOI=
 
-easy-markov-chain@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/easy-markov-chain/-/easy-markov-chain-1.0.0.tgz#3791528e6945a672a68c8263e0a2b9c69d59676a"
-  integrity sha512-vIuWuEOsrnY/QhiTj8Zfu4V3ibj9/VXymuUf7kXXqmlfDszNPqg1AwgJsfFrWrNng9EHadVk2R63/sjhtDWAag==
+easy-markov-chain@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/easy-markov-chain/-/easy-markov-chain-2.0.0.tgz#242755701ab0921edb4a5d57ce63981bf8f12104"
+  integrity sha512-wKE4RYtluDghhWQ4sazR8+OlDkfvAz7EMGHQR8eUipQ3imOsnTR25aVjqLqxgctTGi3hs4o6xMx3kYH1c88iTQ==
 
 emoji-regex@^8.0.0:
   version "8.0.0"

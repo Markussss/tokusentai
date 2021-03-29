@@ -34,7 +34,7 @@ const init = async () => {
     log('Awaiting createTables');
     await createTables();
   } else if (answer.what === 'fill-messages') {
-    await fillMessages('messages.csv');
+    await fillMessages('../messages.csv');
     log(await query('select count(*) as count from messages'));
   } else if (answer.what === 'download') {
     await download();

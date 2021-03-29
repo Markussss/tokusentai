@@ -1,7 +1,7 @@
-import { appendFile } from 'fs';
-import { LOGLEVEL, TIMEZONE } from './config.js';
 import _ from 'lodash';
+import { appendFile } from 'fs';
 import { DateTime } from 'luxon';
+import { LOGLEVEL, TIMEZONE } from './config.js';
 
 const loglevels = {
   log: 10,
@@ -26,7 +26,7 @@ function realLog(message, loglevel) {
   appendFile(
     'tokusentai.log',
     `[${DateTime.now().setZone(TIMEZONE).toISO()}] ${log}\n`,
-    () => {}
+    () => {},
   );
 }
 
@@ -48,4 +48,9 @@ export function error(message = '') {
 
 export function emptyLine() {
   appendFile('tokusentai.log', '\n', () => {});
+}
+
+export function debug(input) {
+  console.log(input);
+  return input;
 }

@@ -1,10 +1,17 @@
 import _ from 'lodash';
+import Chain from 'easy-markov-chain';
 
 import { getDb } from './db.js';
-import { log } from './log.js';
+import { debug, log } from './log.js';
+
+let markovChain;
 
 function random(min, max) {
   return Math.random() * (max - min) + min;
+}
+
+function mention(id) {
+  return `<@${id}>`;
 }
 
 async function getResponse(type, extraQuery = '', extraBinds = []) {
@@ -74,6 +81,42 @@ const responseRegistry = [
           triggers,
         ),
       )?.response;
+    },
+  },
+  {
+    name: 'Reply',
+    async responder(message) {
+      if (message.startsWith(mention(process.env.CLIENT_ID))) {
+        return getResponseByProbability(
+          await getResponse(
+            'reply',
+            'and trigger = ?',
+            [message.replace(mention(process.env.CLIENT_ID), '').trim()],
+          ),
+        )?.response;
+      }
+      return '';
+    },
+  },
+  {
+    name: 'Markov',
+    async responder(message) {
+      if (message.startsWith(process.env.NAME)) {
+        if (!markovChain) {
+          const db = await getDb();
+          const results = await db.all('select message from messages');
+          markovChain = new Chain();
+          results.map((result) => result.message)
+            .filter((result) => !!result)
+            .forEach((result) => markovChain.learn(result));
+          markovChain.normalize();
+        }
+        let seeds = message.replace(process.env.NAME, '')
+          .replace(/[^a-zA-ZæøåÆØÅ ]/g, '')
+          .split(' ');
+        return markovChain.generate(random(3, 30), seeds);
+      }
+      return '';
     },
   },
 ];
