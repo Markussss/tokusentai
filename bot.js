@@ -80,4 +80,34 @@ export async function startFake() {
   }
 }
 
+export async function startBot() {
+  let response;
+  let lastChannel;
+  const discordClient = await getClient();
+  const prompt = inquirer.createPromptModule();
+  discordClient.on('message', async (message) => {
+    lastChannel = message.channel;
+    if (message.content) {
+      response = await getResponse(message.content);
+      if (response) {
+        message.channel.send(response);
+      }
+    }
+  });
+
+  let input;
+  while (!input || input.message !== 'exit') {
+    input = await prompt({ // eslint-disable-line no-await-in-loop
+      type: 'input',
+      name: 'message',
+      message: '>',
+    });
+
+    if (input.message) {
+      lastChannel.send(input.message);
+    }
+  }
+  return new Promise();
+}
+
 export default getClient;

@@ -6,7 +6,7 @@ import {
   createTables, query, fillMessages, fillResponses, download,
 } from './database.js';
 import { log, info, emptyLine } from './log.js';
-import { startFake } from './bot.js';
+import { startFake, startBot } from './bot.js';
 
 dotenv.config();
 
@@ -69,7 +69,7 @@ const init = async () => {
   } else if (answer.what === 'fake') {
     await startFake();
   } else if (answer.what === 'start') {
-    // startBot();
+    await startBot();
   } else if (answer.what === 'exit') {
     process.exit(0);
   }
@@ -80,7 +80,7 @@ async function start() {
   const skip = process.argv[2];
   if (skip) {
     if (skip === 'start') {
-      // await startBot();
+      await startBot();
     } else if (skip === 'fake') {
       await startFake();
     }
