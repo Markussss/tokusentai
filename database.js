@@ -39,6 +39,7 @@ export async function createTables() {
     response text,
     type varchar(10),
     probability float unsigned,
+    extra text,
     unique(trigger, response)
   )`);
   info('Response table OK');

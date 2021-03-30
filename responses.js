@@ -1,5 +1,7 @@
 import _ from 'lodash';
 import Chain from 'easy-markov-chain';
+import luxon from 'luxon';
+import { SingleBar, Presets } from 'cli-progress';
 
 import { getDb } from './db.js';
 import { debug, log } from './log.js';
@@ -14,13 +16,33 @@ function mention(id) {
   return `<@${id}>`;
 }
 
+function timeResponse(response) {
+  if (response?.extra) {
+    const extra = JSON.parse(response.extra);
+    const now = new luxon.DateTime('Europe/Oslo');
+    const start = now.set({ hour: extra.startHour, minute: extra.startMinute });
+    let end = now.set({ hour: extra.endHour, minute: extra.endMinute });
+    if (extra.endHour < extra.rtHour) {
+      end = end.set({ day: end.day + 1 });
+    }
+    if (now >= start && now <= end) {
+      return response.response;
+    }
+    return '';
+  }
+  return response.response;
+}
+
 async function getResponse(type, extraQuery = '', extraBinds = []) {
   const db = await getDb();
   const statement = await db.prepare(
     `select * from responses where type = ? ${extraQuery}`,
   );
-  log(statement);
-  await statement.bind([type, ...extraBinds]);
+  log({ statement, type });
+  await statement.bind([
+    type,
+    ...(Array.isArray(extraBinds) ? extraBinds : [extraBinds]),
+  ]);
   return statement.all();
 }
 
@@ -45,13 +67,14 @@ const responseRegistry = [
   {
     name: 'Exact match',
     async responder(message) {
-      return getResponseByProbability(
+      const response = getResponseByProbability(
         await getResponse(
           'match',
           'and trigger = ?',
-          [message],
+          message,
         ),
-      )?.response;
+      );
+      return timeResponse(response);
     },
   },
   {
@@ -75,26 +98,28 @@ const responseRegistry = [
 
       triggers = _.uniq(triggers);
 
-      return getResponseByProbability(
+      const response = getResponseByProbability(
         await getResponse(
           'fuzzy',
           `and trigger in (${'?,'.repeat(triggers.length - 1)} ?)`,
           triggers,
         ),
-      )?.response;
+      );
+      return timeResponse(response);
     },
   },
   {
     name: 'Reply',
     async responder(message) {
       if (message.startsWith(mention(process.env.CLIENT_ID))) {
-        return getResponseByProbability(
+        const response = getResponseByProbability(
           await getResponse(
             'reply',
             'and trigger = ?',
-            [message.replace(mention(process.env.CLIENT_ID), '').trim()],
+            message.replace(mention(process.env.CLIENT_ID), '').trim(),
           ),
-        )?.response;
+        );
+        return timeResponse(response);
       }
       return '';
     },
@@ -106,11 +131,18 @@ const responseRegistry = [
         if (!markovChain) {
           const db = await getDb();
           const results = await db.all('select message from messages');
+          const progress = new SingleBar({}, Presets.shades_classic);
+          progress.start(results.length);
           markovChain = new Chain();
           results.map((result) => result.message)
             .filter((result) => !!result)
-            .forEach((result) => markovChain.learn(result));
+            .forEach((result, index) => {
+              markovChain.learn(result);
+              progress.update(index);
+            });
           markovChain.normalize();
+          progress.update(results.length);
+          progress.stop();
         }
         const seeds = message.replace(process.env.NAME, '')
           .replace(/[^a-zA-ZæøåÆØÅ ]/g, '')
