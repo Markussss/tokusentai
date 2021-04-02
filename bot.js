@@ -53,11 +53,26 @@ export async function getMessages(channelId, messageId, backward = false, handle
   }
 }
 
+const sentResponses = {
+  responses: [],
+  push(message) {
+    this.responses.push(message);
+    this.responses = this.responses.slice(0, 10);
+  },
+  includes(message) {
+    return this.responses.includes(message);
+  },
+};
+
 async function getResponse(message) {
   const responses = await Promise.all(
     responseRegistry.map((response) => response.responder(message)),
   );
-  return _.sample(responses.filter((response) => !!response));
+  const selectedResponse = _.sample(responses.filter((response) => (
+    !!response && !sentResponses.includes(response)
+  )));
+  sentResponses.push(selectedResponse);
+  return selectedResponse;
 }
 
 export async function startFake() {
