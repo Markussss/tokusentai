@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import _ from 'lodash';
 import { appendFile } from 'fs';
 import { DateTime } from 'luxon';
@@ -14,18 +15,15 @@ function realLog(message, loglevel) {
   if (loglevels[loglevel] < loglevels[LOGLEVEL]) {
     return;
   }
-  if (!_.isString(message)) {
-    message = JSON.stringify(message);
-  }
 
-  const log = `[${loglevel.toUpperCase()}]: ${message}`;
+  const logMessage = `[${loglevel.toUpperCase()}]: ${JSON.stringify(message)}`;
   if (console[loglevel]) {
-    console[loglevel](log);
+    console[loglevel](logMessage);
   }
 
   appendFile(
     'tokusentai.log',
-    `[${DateTime.now().setZone(TIMEZONE).toISO()}] ${log}\n`,
+    `[${DateTime.now().setZone(TIMEZONE).toISO()}] ${logMessage}\n`,
     () => {},
   );
 }
