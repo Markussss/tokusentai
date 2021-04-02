@@ -5,6 +5,7 @@
   "main": "tokusentai.js",
   "type": "module",
   "dependencies": {
+    "chalk": "^4.1.0",
     "cli-progress": "^3.9.0",
     "csv-parse": "^4.15.3",
     "discord.js": "^12.5.1",

@@ -90,11 +90,13 @@ const init = async () => {
 async function start() {
   const skip = process.argv[2];
   if (skip) {
+    log(`Skipping to ${skip}`);
     if (skip === 'start') {
       await startBot();
     } else if (skip === 'fake') {
       await startFake();
     }
+    log('Finished');
     process.exit(0);
   }
   info('Started');

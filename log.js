@@ -1,5 +1,8 @@
+/* eslint-disable no-underscore-dangle */
 /* eslint-disable no-console */
+import chalk from 'chalk';
 import _ from 'lodash';
+
 import { appendFile } from 'fs';
 import { DateTime } from 'luxon';
 import { LOGLEVEL, TIMEZONE } from './config.js';
@@ -11,37 +14,49 @@ const loglevels = {
   error: 40,
 };
 
-function realLog(message, loglevel) {
+function coloredLog(loglevel, message) {
+  const colorFunctions = {
+    error: chalk.red,
+    warn: chalk.yellow,
+    info: chalk.green,
+    log: chalk.blue,
+  };
+  console.log(
+    colorFunctions[loglevel](`[${loglevel.toUpperCase()}]:`),
+    _.isString(message) ? message : JSON.stringify(message),
+  );
+}
+
+function _log(message, loglevel) {
   if (loglevels[loglevel] < loglevels[LOGLEVEL]) {
     return;
   }
 
-  const logMessage = `[${loglevel.toUpperCase()}]: ${JSON.stringify(message)}`;
   if (console[loglevel]) {
-    console[loglevel](logMessage);
+    coloredLog(loglevel, message);
   }
 
   appendFile(
     'tokusentai.log',
-    `[${DateTime.now().setZone(TIMEZONE).toISO()}] ${logMessage}\n`,
+    `[${DateTime.now().setZone(TIMEZONE).toISO()}] ${message}\n`,
     () => {},
   );
 }
 
 export function log(message = '') {
-  realLog(message, 'log');
+  _log(message, 'log');
 }
 
 export function info(message = '') {
-  realLog(message, 'info');
+  _log(message, 'info');
 }
 
 export function warn(message = '') {
-  realLog(message, 'warn');
+  _log(message, 'warn');
 }
 
 export function error(message = '') {
-  realLog(message, 'error');
+  _log(message, 'error');
 }
 
 export function emptyLine() {

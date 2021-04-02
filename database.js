@@ -7,13 +7,12 @@ import franc from 'franc';
 import YAML from 'yaml';
 
 import { getDb } from './db.js';
-import { DEBUG } from './config.js';
 import { log, info, emptyLine } from './log.js';
 import { getMessages } from './bot.js';
 
 export async function query(sql) {
   const db = await getDb();
-  info(`queried database: "${sql}"`);
+  log(`Querying database: "${sql}"`);
   return db.all(sql);
 }
 
@@ -31,12 +30,6 @@ function cleanMessage(message) {
     .trim();
 }
 
-async function storeMessage(message) {
-  const statement = await db.prepare(`insert or replace into messages (
-    id, username, author, message, channel, length, timestamp, lang, wordcount
-  ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-}
-
 async function storeMessages(messages) {
   const db = await getDb();
   const perChunk = 111;
@@ -45,11 +38,11 @@ async function storeMessages(messages) {
   ) values ${'(?, ?, ?, ?, ?, ?, ?, ?, ?), '.repeat(perChunk - 1)} (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   let progress;
   if (messages.length > 200) {
-    log(`Processing ${messages.length} messages split in ${Math.floor(messages.length / perChunk)} chunks with ${perChunk} in each`);
+    info(`Processing ${messages.length} messages split in ${Math.floor(messages.length / perChunk)} chunks with ${perChunk} in each`);
     progress = new SingleBar({}, Presets.shades_classic);
     progress.start(Math.floor(messages.length / perChunk), 0);
   } else {
-    log(`Inserting ${messages.length} messages`);
+    info(`Inserting ${messages.length} messages`);
   }
   await db.run('begin transaction');
   await Promise.all(
@@ -67,7 +60,7 @@ async function storeMessages(messages) {
     progress.stop();
     emptyLine();
   }
-  log('Inserted all messages');
+  info('Inserted all messages');
   return statement.finalize();
 }
 
@@ -93,13 +86,14 @@ export async function download() {
     name: 'channelId',
     message: 'Channel ID to download messages from (https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-)',
   });
-  log(`Want to download messages from channel ${answer.channelId}`);
+  log(`Downloading messages from channel ${answer.channelId}`);
 
   const { channelId } = answer;
 
   const db = await getDb();
   const youngestMessage = await db.get('select max(id) id from messages where channel = ?', channelId);
   const oldestMessage = await db.get('select min(id) id from messages where channel = ?', channelId);
+
   const store = async (messages) => {
     await storeMessages(messages.map((message) => [
       message.id,
@@ -115,6 +109,7 @@ export async function download() {
   };
   await getMessages(channelId, oldestMessage.id, true, store);
   await getMessages(channelId, youngestMessage.id, false, store);
+  info('Finished downloading messages');
 }
 
 export async function fillResponses(type, file) {
@@ -142,4 +137,5 @@ export async function fillResponses(type, file) {
       }),
     ),
   ]);
+  info('Finished filling responses');
 }

@@ -2,29 +2,34 @@ import Discord from 'discord.js';
 import _ from 'lodash';
 import inquirer from 'inquirer';
 
-import { log, info } from './log.js';
+import { log, info, warn } from './log.js';
 import responseRegistry from './responses.js';
 
-let client;
+let DiscordClient;
 
 export async function getClient() {
-  log('Get the client...');
-  if (client) {
-    return client;
+  log('Getting the mainClient');
+  if (DiscordClient) {
+    log('Client already created');
+    return DiscordClient;
   }
 
-  client = new Discord.Client();
-  info('Logging client in');
-  await client.login(process.env.TOKEN);
+  if (!process.env.TOKEN) {
+    warn('There is no TOKEN defined in .env');
+  }
+
+  DiscordClient = new Discord.Client();
+  info('Logging in...');
+  await DiscordClient.login(process.env.TOKEN);
   info('Logged in');
-  return client;
+  return DiscordClient;
 }
 
 export async function getMessages(channelId, messageId, backward = false, handler = (a) => a) {
-  await getClient();
+  const client = await getClient();
   const channel = await client.channels.fetch(channelId);
 
-  log(`Downloading messages ${backward ? 'before' : 'after'} ${messageId}`);
+  info(`Downloading messages ${backward ? 'before' : 'after'} ${messageId ?? '[idk lmao]'}`);
   let messageHistory;
   let edgeMessage;
   const searchQuery = {
@@ -34,7 +39,7 @@ export async function getMessages(channelId, messageId, backward = false, handle
     searchQuery[backward ? 'before' : 'after'] = messageId;
   }
   while (!messageHistory || messageHistory.length > 0) {
-    log(`Downloading messages ${backward ? 'before' : 'after'} ${searchQuery[backward ? 'before' : 'after']}`);
+    info(`Downloading messages ${backward ? 'before' : 'after'} ${searchQuery[backward ? 'before' : 'after']}`);
     messageHistory = Array.from(
       await channel.messages.fetch(searchQuery), // eslint-disable-line no-await-in-loop
     ).map((message) => message[1]);
@@ -56,8 +61,10 @@ export async function getMessages(channelId, messageId, backward = false, handle
 const sentResponses = {
   responses: [],
   push(message) {
+    if (!message) return;
     this.responses.push(message);
     this.responses = this.responses.slice(0, 10);
+    log(`Added ${message} to sentResponses`);
   },
   includes(message) {
     return this.responses.includes(message);
@@ -65,6 +72,7 @@ const sentResponses = {
 };
 
 async function getResponse(message) {
+  log(`Finding a response for ${message}`);
   const responses = await Promise.all(
     responseRegistry.map((response) => response.responder(message)),
   );
@@ -76,6 +84,7 @@ async function getResponse(message) {
 }
 
 export async function startFake() {
+  log('Starting a fake bot');
   const prompt = inquirer.createPromptModule();
   let input;
   let response;
@@ -89,13 +98,14 @@ export async function startFake() {
     if (input.message) {
       response = await getResponse(input.message); // eslint-disable-line no-await-in-loop
       if (response) {
-        log(response);
+        info(response);
       }
     }
   }
 }
 
 export async function startBot() {
+  log('Starting a real bot');
   let response;
   let lastChannel;
   const discordClient = await getClient();

@@ -24,7 +24,6 @@ To set up your own developing environment do this:
   - Create `storeMessage`, use this to import messages from both csv, API and live channel
     - Use transactions (maybe with "chunked committing"(?) - every nth insert, commit and start new transaction) for speed
 - More and better logging
-  - Add `log`-calls in every function, making it possible to see everything that has happened in the log
   - Move feedback (bot responses, selected operation finished, etc) into `info`-calls
   - Add `warn`-calls to inform about missing data (missing NAME, CLIENT_ID, TOKEN, entries in `messages`-table, entries in `responses`-table, etc)
 - Simple chat command interface for adding/editing/removing responses
