@@ -39,6 +39,12 @@ To set up your own developing environment do this:
   - `memojis.yeye`?
   - Look in [tokusentai.js](tokusentai.js) for tips
 - Port most, if not all, functionality from [tokusentai.js](tokusentai.js) and [toFile.js](toFile.js)
+  - Tell the bot to shut up
+  - Add timeout to message responder (can only respond every n seconds)
+  - Send messages as bot from admin interface
+  - Moonrunes
+  - Memoji triggers for messages and reactions
+  - Ignore messages from other bots
 - Cleanup, refactor, document
 
 ### Thoughts
