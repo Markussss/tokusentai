@@ -3,10 +3,11 @@ import fs from 'fs/promises';
 import dotenv from 'dotenv';
 
 import {
-  createTables, query, fillMessages, fillResponses, download,
+  query, fillMessages, fillResponses, download,
 } from './database.js';
 import { log, info, emptyLine } from './log.js';
 import { startFake, startBot } from './bot.js';
+import { getDb, createMigration } from './db.js';
 
 dotenv.config();
 
@@ -41,7 +42,8 @@ const init = async () => {
       name: 'what',
       message: 'What do you want to do?',
       choices: [
-        { name: 'Create tables', value: 'create' },
+        { name: 'Migrate the database', value: 'migrate' },
+        { name: 'Create migration', value: 'migration' },
         await importMessages({ name: 'Fill messages table from messages.csv', value: 'fill-messages' }),
         { name: 'Fill messages table from API', value: 'download' },
         await importYaml({ name: 'Fill response table from yaml files', value: 'fill-responses' }),
@@ -50,11 +52,20 @@ const init = async () => {
         { name: 'Exit', value: 'exit' },
       ].filter((choice) => !!choice),
     },
+    {
+      type: 'input',
+      name: 'migrationName',
+      message: 'What should the migration be called?',
+      when: (answer) => answer.what === 'migration',
+    },
   ];
   const answer = await prompt(questions);
-  if (answer.what === 'create') {
-    log('Awaiting createTables');
-    await createTables();
+  if (answer.what === 'migrate') {
+    const db = await getDb();
+    log('Migrating');
+    await db.migrate();
+  } else if (answer.migrationName) {
+    await createMigration(answer.migrationName);
   } else if (answer.what === 'fill-messages') {
     await fillMessages('import/messages.csv');
     log(await query('select count(*) as count from messages'));

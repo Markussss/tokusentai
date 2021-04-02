@@ -11,41 +11,6 @@ import { DEBUG } from './config.js';
 import { log, info, emptyLine } from './log.js';
 import { getMessages } from './bot.js';
 
-export async function createTables() {
-  const db = await getDb();
-  if (!db) throw new Error('No database found');
-  if (DEBUG) {
-    await db.exec('drop table if exists messages');
-    log('dropped message table');
-    await db.exec('drop table if exists responses');
-    log('dropped message responses');
-  }
-
-  await db.exec(`create table if not exists messages (
-      id varchar(64) primary key,
-      username varchar(255),
-      author varchar(64),
-      message text,
-      channel varchar(64),
-      length integer unsigned,
-      timestamp integer unsigned,
-      lang char(3),
-      wordcount integer unsigned
-  )`);
-  info('Message table OK');
-
-  await db.exec(`create table if not exists responses (
-    trigger text,
-    response text,
-    type varchar(10),
-    probability float unsigned,
-    extra text,
-    unique(trigger, response)
-  )`);
-  info('Response table OK');
-  return undefined;
-}
-
 export async function query(sql) {
   const db = await getDb();
   info(`queried database: "${sql}"`);
@@ -64,6 +29,12 @@ function cleanMessage(message) {
     .replace(/[\r\n]/g, ' ')
     .replace(/ +/g, ' ')
     .trim();
+}
+
+async function storeMessage(message) {
+  const statement = await db.prepare(`insert or replace into messages (
+    id, username, author, message, channel, length, timestamp, lang, wordcount
+  ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
 }
 
 async function storeMessages(messages) {

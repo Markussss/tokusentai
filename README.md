@@ -21,6 +21,7 @@ To set up your own developing environment do this:
   - Keep a list of the last 10 (maybe more?) responses
   - Don't send the response if the current response is in the list
 - Store messages as they arrive
+- More and better logging
 - Simple chat command interface for adding/editing/removing responses
 - Make more bot data easier to access in the responder functions
 - Add reactions
