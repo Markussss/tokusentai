@@ -20,22 +20,23 @@ To set up your own developing environment do this:
 - Store messages as they arrive
   - Create `storeMessage`, use this to import messages from both csv, API and live channel
     - Use transactions (maybe with "chunked committing"(?) - every nth insert, commit and start new transaction) for speed
-- More and better logging
-  - Move feedback (bot responses, selected operation finished, etc) into `info`-calls
-  - Add `warn`-calls to inform about missing data (missing NAME, CLIENT_ID, TOKEN, entries in `messages`-table, entries in `responses`-table, etc)
 - Simple chat command interface
   - Talk with bot in DMs? Tag the bot? Inquirer questionaire?
   - Adding/editing/removing responses
   - Tell the bot to be quiet
+  - Show help, commands, responses, etc
 - Make more bot data easier to access in the responder functions
   - Pass the message object to the responder functions, instead of the message text
     - Need to make sure that `bot:fake` is not too different from `bot:start`
-- Add reactions
-  - Should be implemented as a responder
 - Add memoji support
   - `memoji('yeye')`?
   - `memojis.yeye`?
   - Look in [tokusentai.js](tokusentai.js) for tips
+- Add reactions
+  - Should be implemented as a responder
+- More and better logging
+  - Move feedback (bot responses, selected operation finished, etc) into `info`-calls
+  - Add `warn`-calls to inform about missing data (missing NAME, CLIENT_ID, TOKEN, entries in `messages`-table, entries in `responses`-table, etc)
 - Port most, if not all, functionality from [tokusentai.js](tokusentai.js) and [toFile.js](toFile.js)
   - Tell the bot to shut up
   - Add timeout to message responder (can only respond every n seconds)
