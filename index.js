@@ -92,6 +92,9 @@ async function start() {
   if (skip) {
     log(`Skipping to ${skip}`);
     if (skip === 'start') {
+      const db = await getDb();
+      log('Migrating');
+      await db.migrate();
       await startBot();
     } else if (skip === 'fake') {
       await startFake();
