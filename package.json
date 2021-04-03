@@ -41,8 +41,8 @@
   "homepage": "https://github.com/Markussss/tokusentai#readme",
   "scripts": {
     "start": "node index.js",
-    "bot:start": "yarn install && node index.js start",
-    "bot:start:forever": "npx pm2 start index.js -- start",
+    "bot:start": "node index.js start",
+    "bot:start:forever": "npx pm2 start.sh",
     "bot:restart": "npx pm2 restart all",
     "bot:stop": "npx pm2 stop all",
     "bot:fake": "npx nodemon index.js -- fake",
