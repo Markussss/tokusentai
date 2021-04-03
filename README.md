@@ -16,9 +16,6 @@ To set up your own developing environment do this:
 
 ## To do
 
-### Bugs
-- `bot:start` isn't responding properly to messages that `bot:fake` is responding to
-
 ### Plans
 - Store messages as they arrive
   - Create `storeMessage`, use this to import messages from both csv, API and live channel
