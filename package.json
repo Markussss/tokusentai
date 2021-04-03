@@ -42,7 +42,7 @@
   "scripts": {
     "start": "node index.js",
     "bot:start": "node index.js start",
-    "bot:start:forever": "npx pm2 start.sh",
+    "bot:start:forever": "npx pm2 start start.sh",
     "bot:restart": "npx pm2 restart all",
     "bot:stop": "npx pm2 stop all",
     "bot:fake": "npx nodemon index.js -- fake",
