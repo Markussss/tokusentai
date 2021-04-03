@@ -23,9 +23,10 @@ To set up your own developing environment do this:
 - More and better logging
   - Move feedback (bot responses, selected operation finished, etc) into `info`-calls
   - Add `warn`-calls to inform about missing data (missing NAME, CLIENT_ID, TOKEN, entries in `messages`-table, entries in `responses`-table, etc)
-- Simple chat command interface for adding/editing/removing responses
+- Simple chat command interface
   - Talk with bot in DMs? Tag the bot? Inquirer questionaire?
-  - Could be implemented as a response in [responses.js](responses.js), but should it...?
+  - Adding/editing/removing responses
+  - Tell the bot to be quiet
 - Make more bot data easier to access in the responder functions
   - Pass the message object to the responder functions, instead of the message text
     - Need to make sure that `bot:fake` is not too different from `bot:start`
