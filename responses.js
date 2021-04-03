@@ -5,16 +5,9 @@ import { SingleBar, Presets } from 'cli-progress';
 
 import { getDb } from './db.js';
 import { debug, log } from './log.js';
+import { random, mention } from './util.js';
 
 let markovChain;
-
-function random(min, max) {
-  return Math.random() * (max - min) + min;
-}
-
-function mention(id) {
-  return `<@${id}>`;
-}
 
 function timeResponse(response) {
   if (response?.extra) {
@@ -111,12 +104,12 @@ const responseRegistry = [
   {
     name: 'Reply',
     async responder(message) {
-      if (message.startsWith(mention(process.env.CLIENT_ID))) {
+      if (message.startsWith(mention())) {
         const response = getResponseByProbability(
           await getResponse(
             'reply',
             'and trigger = ?',
-            message.replace(mention(process.env.CLIENT_ID), '').trim(),
+            message.replace(mention(), '').trim(),
           ),
         );
         return timeResponse(response);

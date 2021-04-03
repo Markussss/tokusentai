@@ -4,6 +4,8 @@ import inquirer from 'inquirer';
 
 import { log, info, warn } from './log.js';
 import responseRegistry from './responses.js';
+import { isCommand, doCommand } from './command.js';
+import { mention } from './util.js';
 
 let DiscordClient;
 
@@ -72,9 +74,14 @@ const sentResponses = {
 };
 
 async function getResponse(message) {
-  log(`Finding a response for ${message}`);
+  log(`Finding a response for ${message.content}`);
+
+  if (isCommand(message.content)) {
+    return doCommand(message.content);
+  }
+
   const responses = await Promise.all(
-    responseRegistry.map((response) => response.responder(message)),
+    responseRegistry.map((response) => response.responder(message.content)),
   );
   const selectedResponse = _.sample(responses.filter((response) => (
     !!response && !sentResponses.includes(response)
@@ -88,15 +95,16 @@ export async function startFake() {
   const prompt = inquirer.createPromptModule();
   let input;
   let response;
-  while (!input || input.message !== 'exit') {
+  while (!input || input.content !== 'exit') {
     input = await prompt({ // eslint-disable-line no-await-in-loop
       type: 'input',
-      name: 'message',
+      name: 'content',
       message: '>',
     });
 
-    if (input.message) {
-      response = await getResponse(input.message); // eslint-disable-line no-await-in-loop
+    if (input.content) {
+      input.content = input.content.replace(/^at/, mention());
+      response = await getResponse(input); // eslint-disable-line no-await-in-loop
       if (response) {
         info(response);
       }
@@ -113,7 +121,7 @@ export async function startBot() {
   discordClient.on('message', async (message) => {
     lastChannel = message.channel;
     if (message.content) {
-      response = await getResponse(message.content);
+      response = await getResponse(message);
       if (response) {
         message.channel.send(response);
       }
